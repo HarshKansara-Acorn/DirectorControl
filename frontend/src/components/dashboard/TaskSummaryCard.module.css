@@ -1,0 +1,36 @@
+.summary {
+  display: flex;
+  gap: 16px;
+  justify-content: space-around;
+  padding: 8px 0;
+}
+
+.summaryItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+}
+
+.summaryIcon {
+  font-size: 20px;
+}
+
+.summaryLabel {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}

@@ -1,0 +1,99 @@
+.card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  font-size: 16px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge_blue {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.badge_green {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.badge_orange {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.badge_red {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.badge_gray {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.addBtn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.15s;
+}
+
+.addBtn:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.body {
+  padding: 18px;
+  min-height: 120px;
+}
