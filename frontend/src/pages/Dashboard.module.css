@@ -1,67 +1,20 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
+.page { display: flex; flex-direction: column; gap: 24px; }
+.pageHeader { display: flex; align-items: flex-start; justify-content: space-between; }
+.dateStr { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.8px; margin-bottom: 4px; }
+.greeting { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.summary { font-size: 14px; color: var(--text-secondary); }
+.summary strong { color: var(--brand-primary); font-weight: 600; }
 
-.pageHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 
-.dateStr {
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  letter-spacing: 0.8px;
-  margin-bottom: 4px;
-}
-
-.greeting {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 6px;
-}
-
-.summary {
-  font-size: 14px;
-  color: #64748b;
-}
-
-.summary strong {
-  color: #1e40af;
-  font-weight: 600;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 900px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.loadingGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
+.loadingGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 
 .skeletonCard {
   height: 200px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-to) 50%, var(--skeleton-from) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 12px;
+  animation: shimmer 1.5s infinite; border-radius: 12px;
 }
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }

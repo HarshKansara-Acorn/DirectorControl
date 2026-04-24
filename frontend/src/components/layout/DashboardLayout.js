@@ -1,24 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useDirector } from '../../context/DirectorContext';
+import { useNotifications } from '../../context/NotificationContext';
 import {
   LayoutDashboard, CheckSquare, Bell, Search,
-  Settings, LogOut, ChevronDown, User
+  Settings, LogOut, ChevronDown, User,
+  Plane, FileText, Receipt, Package, Calendar, Users
 } from 'lucide-react';
+import NotificationPanel from './NotificationPanel';
+import SearchPanel from './SearchPanel';
+import ThemeToggle from './ThemeToggle';
 import styles from './DashboardLayout.module.css';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+  { path: '/travel', label: 'Travel', icon: Plane },
+  { path: '/documents', label: 'Documents', icon: FileText },
+  { path: '/bills', label: 'Bills', icon: Receipt },
+  { path: '/assets', label: 'Assets', icon: Package },
+  { path: '/events', label: 'Events', icon: Calendar },
+  { path: '/teams', label: 'Teams', icon: Users },
 ];
 
 const DashboardLayout = () => {
   const { user, logout, isAdmin } = useAuth();
   const { directors, selectedDirector, setSelectedDirector } = useDirector();
+  const { notifications } = useNotifications();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showDirectorDropdown, setShowDirectorDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const navigate = useNavigate();
+
+  // Global keyboard shortcut: Ctrl+K or Cmd+K opens search
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+        setShowNotifications(false);
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -99,21 +127,45 @@ const DashboardLayout = () => {
           )}
 
           {/* Search */}
-          <button className={styles.iconBtn} aria-label="Search">
+          <button
+            className={`${styles.iconBtn} ${showSearch ? styles.iconBtnActive : ''}`}
+            aria-label="Search (Ctrl+K)"
+            onClick={() => { setShowSearch(true); setShowNotifications(false); setShowUserMenu(false); }}
+            title="Search (Ctrl+K)"
+          >
             <Search size={18} />
           </button>
 
+          {/* Search Panel */}
+          {showSearch && <SearchPanel onClose={() => setShowSearch(false)} />}
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {/* Notifications */}
-          <button className={styles.iconBtn} aria-label="Notifications">
-            <Bell size={18} />
-            <span className={styles.notifBadge}>3</span>
-          </button>
+          <div className={styles.notifWrapper}>
+            <button
+              className={`${styles.iconBtn} ${showNotifications ? styles.iconBtnActive : ''}`}
+              aria-label="Notifications"
+              onClick={() => { setShowNotifications(v => !v); setShowUserMenu(false); setShowSearch(false); }}
+            >
+              <Bell size={18} />
+              {notifications.length > 0 && (
+                <span className={styles.notifBadge}>
+                  {notifications.length > 9 ? '9+' : notifications.length}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <NotificationPanel onClose={() => setShowNotifications(false)} />
+            )}
+          </div>
 
           {/* User Menu */}
           <div className={styles.userMenu}>
             <button
               className={styles.userBtn}
-              onClick={() => setShowUserMenu(!showUserMenu)}
+              onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); setShowSearch(false); }}
               aria-label="User menu"
             >
               <div className={styles.userAvatar}>{user?.avatar || user?.name?.[0]}</div>

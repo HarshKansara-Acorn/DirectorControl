@@ -2,62 +2,86 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { reminders } = require('../data/mockData');
+const { query, queryOne, execute, sql } = require('../config/db');
 
-// GET /api/reminders?directorId=xxx
-router.get('/', authenticateToken, (req, res) => {
-  const { directorId } = req.query;
-  let filtered = reminders;
-
-  if (req.user.role === 'director') {
-    filtered = reminders.filter(r => r.directorId === req.user.id);
-  } else if (directorId) {
-    filtered = reminders.filter(r => r.directorId === directorId);
-  }
-
-  res.json(filtered);
+const mapReminder = (r) => ({
+  id: r.Id, title: r.Title, description: r.Description,
+  directorId: r.DirectorId,
+  dueDate: r.DueDate ? r.DueDate.toISOString().split('T')[0] : null,
+  priority: r.Priority, isActive: r.IsActive === true || r.IsActive === 1,
+  createdBy: r.CreatedBy, createdAt: r.CreatedAt,
 });
 
-// POST /api/reminders
-router.post('/', authenticateToken, requireAdmin, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const { directorId } = req.query;
+    const targetId = req.user.role === 'director' ? req.user.id : (directorId || null);
+    let rows;
+    if (targetId) {
+      rows = await query('SELECT * FROM DC_Reminders WHERE DirectorId=@id ORDER BY DueDate', { id: { type: sql.NVarChar, value: targetId } });
+    } else {
+      rows = await query('SELECT * FROM DC_Reminders ORDER BY DueDate');
+    }
+    res.json(rows.map(mapReminder));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch reminders' });
+  }
+});
+
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   const { title, description, directorId, dueDate, priority } = req.body;
-
-  if (!title || !directorId) {
-    return res.status(400).json({ message: 'Title and directorId are required' });
+  if (!title || !directorId) return res.status(400).json({ message: 'Title and directorId are required' });
+  try {
+    const id = uuidv4();
+    await execute(
+      'INSERT INTO DC_Reminders (Id,Title,Description,DirectorId,DueDate,Priority,IsActive,CreatedBy) VALUES (@id,@title,@desc,@directorId,@dueDate,@priority,1,@createdBy)',
+      {
+        id: { type: sql.NVarChar, value: id },
+        title: { type: sql.NVarChar, value: title },
+        desc: { type: sql.NVarChar, value: description || '' },
+        directorId: { type: sql.NVarChar, value: directorId },
+        dueDate: { type: sql.Date, value: dueDate ? new Date(dueDate) : null },
+        priority: { type: sql.NVarChar, value: priority || 'medium' },
+        createdBy: { type: sql.NVarChar, value: req.user.id },
+      }
+    );
+    const created = await queryOne('SELECT * FROM DC_Reminders WHERE Id=@id', { id: { type: sql.NVarChar, value: id } });
+    res.status(201).json(mapReminder(created));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Failed to create reminder' });
   }
-
-  const newReminder = {
-    id: uuidv4(),
-    title,
-    description: description || '',
-    directorId,
-    dueDate: dueDate || null,
-    priority: priority || 'medium',
-    isActive: true,
-    createdBy: req.user.id,
-    createdAt: new Date().toISOString(),
-  };
-
-  reminders.push(newReminder);
-  res.status(201).json(newReminder);
 });
 
-// PUT /api/reminders/:id
-router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const index = reminders.findIndex(r => r.id === req.params.id);
-  if (index === -1) return res.status(404).json({ message: 'Reminder not found' });
-
-  reminders[index] = { ...reminders[index], ...req.body, id: reminders[index].id };
-  res.json(reminders[index]);
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const { title, description, dueDate, priority, isActive } = req.body;
+  try {
+    await execute(
+      'UPDATE DC_Reminders SET Title=@title,Description=@desc,DueDate=@dueDate,Priority=@priority,IsActive=@isActive WHERE Id=@id',
+      {
+        id: { type: sql.NVarChar, value: req.params.id },
+        title: { type: sql.NVarChar, value: title },
+        desc: { type: sql.NVarChar, value: description || '' },
+        dueDate: { type: sql.Date, value: dueDate ? new Date(dueDate) : null },
+        priority: { type: sql.NVarChar, value: priority || 'medium' },
+        isActive: { type: sql.Bit, value: isActive !== false ? 1 : 0 },
+      }
+    );
+    const updated = await queryOne('SELECT * FROM DC_Reminders WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    if (!updated) return res.status(404).json({ message: 'Reminder not found' });
+    res.json(mapReminder(updated));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update reminder' });
+  }
 });
 
-// DELETE /api/reminders/:id
-router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const index = reminders.findIndex(r => r.id === req.params.id);
-  if (index === -1) return res.status(404).json({ message: 'Reminder not found' });
-
-  reminders.splice(index, 1);
-  res.json({ message: 'Reminder deleted' });
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    await execute('DELETE FROM DC_Reminders WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    res.json({ message: 'Reminder deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete reminder' });
+  }
 });
 
 module.exports = router;

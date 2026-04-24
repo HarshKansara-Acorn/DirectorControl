@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Auto Commit to GitHub",
+  "description": "After each agent task completes, runs health checks on the backend and frontend, then automatically stages, commits, and pushes all changes to HarshKansara-Acorn/DirectorControl on GitHub",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bash scripts/verify-and-commit.sh",
+    "timeout": 60
+  }
+}

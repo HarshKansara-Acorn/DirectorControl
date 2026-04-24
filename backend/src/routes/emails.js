@@ -2,63 +2,74 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { urgentEmails } = require('../data/mockData');
+const { query, queryOne, execute, sql } = require('../config/db');
 
-// GET /api/emails?directorId=xxx
-router.get('/', authenticateToken, (req, res) => {
-  const { directorId } = req.query;
-  let filtered = urgentEmails;
-
-  if (req.user.role === 'director') {
-    filtered = urgentEmails.filter(e => e.directorId === req.user.id);
-  } else if (directorId) {
-    filtered = urgentEmails.filter(e => e.directorId === directorId);
-  }
-
-  res.json(filtered);
+const mapEmail = (r) => ({
+  id: r.Id, subject: r.Subject, from: r.FromEmail, fromName: r.FromName,
+  directorId: r.DirectorId, preview: r.Preview, priority: r.Priority,
+  isRead: r.IsRead === true || r.IsRead === 1,
+  createdBy: r.CreatedBy, createdAt: r.CreatedAt,
 });
 
-// POST /api/emails
-router.post('/', authenticateToken, requireAdmin, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const { directorId } = req.query;
+    const targetId = req.user.role === 'director' ? req.user.id : (directorId || null);
+    let rows;
+    if (targetId) {
+      rows = await query('SELECT * FROM DC_UrgentEmails WHERE DirectorId=@id ORDER BY CreatedAt DESC', { id: { type: sql.NVarChar, value: targetId } });
+    } else {
+      rows = await query('SELECT * FROM DC_UrgentEmails ORDER BY CreatedAt DESC');
+    }
+    res.json(rows.map(mapEmail));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch emails' });
+  }
+});
+
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   const { subject, from, fromName, directorId, preview, priority } = req.body;
-
-  if (!subject || !directorId) {
-    return res.status(400).json({ message: 'Subject and directorId are required' });
+  if (!subject || !directorId) return res.status(400).json({ message: 'Subject and directorId are required' });
+  try {
+    const id = uuidv4();
+    await execute(
+      'INSERT INTO DC_UrgentEmails (Id,Subject,FromEmail,FromName,DirectorId,Preview,Priority,IsRead,CreatedBy) VALUES (@id,@subject,@from,@fromName,@directorId,@preview,@priority,0,@createdBy)',
+      {
+        id: { type: sql.NVarChar, value: id },
+        subject: { type: sql.NVarChar, value: subject },
+        from: { type: sql.NVarChar, value: from || '' },
+        fromName: { type: sql.NVarChar, value: fromName || '' },
+        directorId: { type: sql.NVarChar, value: directorId },
+        preview: { type: sql.NVarChar, value: preview || '' },
+        priority: { type: sql.NVarChar, value: priority || 'urgent' },
+        createdBy: { type: sql.NVarChar, value: req.user.id },
+      }
+    );
+    const created = await queryOne('SELECT * FROM DC_UrgentEmails WHERE Id=@id', { id: { type: sql.NVarChar, value: id } });
+    res.status(201).json(mapEmail(created));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to create email' });
   }
-
-  const newEmail = {
-    id: uuidv4(),
-    subject,
-    from: from || '',
-    fromName: fromName || '',
-    directorId,
-    preview: preview || '',
-    priority: priority || 'urgent',
-    isRead: false,
-    createdBy: req.user.id,
-    createdAt: new Date().toISOString(),
-  };
-
-  urgentEmails.push(newEmail);
-  res.status(201).json(newEmail);
 });
 
-// PATCH /api/emails/:id/read
-router.patch('/:id/read', authenticateToken, (req, res) => {
-  const index = urgentEmails.findIndex(e => e.id === req.params.id);
-  if (index === -1) return res.status(404).json({ message: 'Email not found' });
-
-  urgentEmails[index].isRead = true;
-  res.json(urgentEmails[index]);
+router.patch('/:id/read', authenticateToken, async (req, res) => {
+  try {
+    await execute('UPDATE DC_UrgentEmails SET IsRead=1 WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    const updated = await queryOne('SELECT * FROM DC_UrgentEmails WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    if (!updated) return res.status(404).json({ message: 'Email not found' });
+    res.json(mapEmail(updated));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to mark email as read' });
+  }
 });
 
-// DELETE /api/emails/:id
-router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const index = urgentEmails.findIndex(e => e.id === req.params.id);
-  if (index === -1) return res.status(404).json({ message: 'Email not found' });
-
-  urgentEmails.splice(index, 1);
-  res.json({ message: 'Email deleted' });
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    await execute('DELETE FROM DC_UrgentEmails WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    res.json({ message: 'Email deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete email' });
+  }
 });
 
 module.exports = router;

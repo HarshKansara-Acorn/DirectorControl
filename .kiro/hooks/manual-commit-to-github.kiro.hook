@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Manual Commit to GitHub",
+  "description": "Manually trigger a verification and commit to GitHub at any time by clicking the run button in the Agent Hooks panel",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bash scripts/verify-and-commit.sh",
+    "timeout": 60
+  }
+}

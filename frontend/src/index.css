@@ -1,3 +1,137 @@
+/* ── CSS Custom Properties ─────────────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --bg-app:        #f1f5f9;
+  --bg-surface:    #ffffff;
+  --bg-subtle:     #f8fafc;
+  --bg-muted:      #f1f5f9;
+  --bg-hover:      #f1f5f9;
+  --bg-active:     #eff6ff;
+
+  /* Borders */
+  --border:        #e2e8f0;
+  --border-subtle: #f1f5f9;
+
+  /* Text */
+  --text-primary:  #1e293b;
+  --text-secondary:#64748b;
+  --text-muted:    #94a3b8;
+  --text-disabled: #cbd5e1;
+
+  /* Brand */
+  --brand-primary: #1e40af;
+  --brand-light:   #eff6ff;
+  --brand-text:    #1e40af;
+
+  /* Header */
+  --header-bg:     #ffffff;
+  --header-border: #e2e8f0;
+  --header-shadow: 0 1px 3px rgba(0,0,0,0.06);
+
+  /* Nav */
+  --nav-link:      #64748b;
+  --nav-active-bg: #eff6ff;
+  --nav-active:    #1e40af;
+
+  /* Cards */
+  --card-bg:       #ffffff;
+  --card-border:   #e2e8f0;
+  --card-shadow:   0 4px 12px rgba(0,0,0,0.08);
+
+  /* Inputs */
+  --input-bg:      #f8fafc;
+  --input-border:  #e2e8f0;
+  --input-focus:   #3b82f6;
+  --input-text:    #1e293b;
+
+  /* Table */
+  --table-head-bg: #f8fafc;
+  --table-row-hover: #f8fafc;
+
+  /* Modal */
+  --modal-bg:      #ffffff;
+  --modal-overlay: rgba(15, 23, 42, 0.5);
+
+  /* Skeleton */
+  --skeleton-from: #f1f5f9;
+  --skeleton-to:   #e2e8f0;
+
+  /* Scrollbar */
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-hover: #94a3b8;
+
+  /* Status colours stay the same in both modes */
+  --green-bg:  #f0fdf4; --green-text:  #15803d; --green-border: #86efac;
+  --red-bg:    #fef2f2; --red-text:    #dc2626; --red-border:   #fca5a5;
+  --orange-bg: #fff7ed; --orange-text: #c2410c; --orange-border:#fed7aa;
+  --yellow-bg: #fffbeb; --yellow-text: #d97706; --yellow-border:#fde68a;
+  --purple-bg: #faf5ff; --purple-text: #7c3aed; --purple-border:#e9d5ff;
+  --indigo-bg: #eef2ff; --indigo-text: #6366f1; --indigo-border:#c7d2fe;
+}
+
+/* ── Dark mode overrides ───────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-app:        #0f172a;
+  --bg-surface:    #1e293b;
+  --bg-subtle:     #1e293b;
+  --bg-muted:      #0f172a;
+  --bg-hover:      #334155;
+  --bg-active:     #1e3a5f;
+
+  --border:        #334155;
+  --border-subtle: #1e293b;
+
+  --text-primary:  #f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:    #64748b;
+  --text-disabled: #475569;
+
+  --brand-primary: #3b82f6;
+  --brand-light:   #1e3a5f;
+  --brand-text:    #93c5fd;
+
+  --header-bg:     #1e293b;
+  --header-border: #334155;
+  --header-shadow: 0 1px 3px rgba(0,0,0,0.3);
+
+  --nav-link:      #94a3b8;
+  --nav-active-bg: #1e3a5f;
+  --nav-active:    #93c5fd;
+
+  --card-bg:       #1e293b;
+  --card-border:   #334155;
+  --card-shadow:   0 4px 12px rgba(0,0,0,0.3);
+
+  --input-bg:      #0f172a;
+  --input-border:  #334155;
+  --input-focus:   #3b82f6;
+  --input-text:    #f1f5f9;
+
+  --table-head-bg:   #0f172a;
+  --table-row-hover: #334155;
+
+  --modal-bg:      #1e293b;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+
+  --skeleton-from: #1e293b;
+  --skeleton-to:   #334155;
+
+  --scrollbar-track: #0f172a;
+  --scrollbar-thumb: #334155;
+  --scrollbar-hover: #475569;
+
+  /* Soften status colours slightly for dark */
+  --green-bg:  #052e16; --green-text:  #4ade80;
+  --red-bg:    #450a0a; --red-text:    #f87171;
+  --orange-bg: #431407; --orange-text: #fb923c;
+  --yellow-bg: #422006; --yellow-text: #fbbf24;
+  --purple-bg: #2e1065; --purple-text: #c084fc;
+  --indigo-bg: #1e1b4b; --indigo-text: #a5b4fc;
+}
+
+/* ── Base reset ────────────────────────────────────────────────────────────── */
 * {
   margin: 0;
   padding: 0;
@@ -6,25 +140,13 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #f1f5f9;
-  color: #1e293b;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb  { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }

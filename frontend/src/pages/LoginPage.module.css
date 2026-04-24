@@ -8,12 +8,13 @@
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 40px;
   width: 100%;
   max-width: 420px;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
 }
 
 .brand {
@@ -39,13 +40,13 @@
 .brandName {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .brandTagline {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .form {
@@ -63,17 +64,17 @@
 .label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .input {
   width: 100%;
   padding: 11px 14px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--input-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1e293b;
-  background: #f8fafc;
+  color: var(--input-text);
+  background: var(--input-bg);
   transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
   font-family: inherit;
@@ -82,7 +83,7 @@
 .input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: #ffffff;
+  background: var(--bg-surface);
 }
 
 .passwordWrapper {
@@ -154,16 +155,16 @@
 .hint {
   margin-top: 24px;
   padding: 14px;
-  background: #f8fafc;
+  background: var(--bg-subtle);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .hintTitle {
   font-weight: 600;
-  color: #475569;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
