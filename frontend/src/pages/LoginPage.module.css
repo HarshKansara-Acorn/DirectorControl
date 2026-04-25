@@ -6,15 +6,15 @@
   position: relative;
   overflow: hidden;
 
-  /* Fallback gradient while image loads */
-  background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0ea5e9 100%);
+  /* Fallback gradient while image loads — matches image palette */
+  background: linear-gradient(135deg, #e8f4fd 0%, #bfdbfe 50%, #7dd3fc 100%);
 }
 
 /* ── Actual background image ── */
 .container::before {
   content: '';
   position: absolute; inset: 0;
-  background-image: url('/login-bg.svg');
+  background-image: url('../assets/login-bg.png');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -37,17 +37,17 @@
 
 .card {
   position: relative; z-index: 1;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
   border-radius: 20px;
   padding: 36px 40px;
   width: 100%; max-width: 440px;
   box-shadow:
-    0 8px 40px rgba(14, 116, 144, 0.18),
-    0 2px 8px rgba(14, 116, 144, 0.1),
+    0 8px 40px rgba(96, 165, 250, 0.2),
+    0 2px 8px rgba(96, 165, 250, 0.1),
     inset 0 1px 0 rgba(255,255,255,0.95);
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 /* ── Brand ── */

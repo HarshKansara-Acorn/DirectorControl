@@ -16,15 +16,13 @@ const git = simpleGit({
   maxConcurrentProcesses: 1,
 });
 
-const commitMessage = `style: replace distorted SVG lock with clean vector recreation matching shared image
+const commitMessage = `style: use original Bg-DirectorControl.png as login background (unmodified)
 
-- Created frontend/public/login-bg.svg: precise SVG recreation of the shared image
-  - Sky-blue gradient background (#7dd3fc → #38bdf8 → #0ea5e9)
-  - Two concentric circles (outer dashed, inner solid) in white
-  - Frosted-glass padlock: rounded rect body, circular shackle, indigo keyhole dot
-  - Correct proportions and frosted glass effect matching the reference image
-- Login CSS now uses url('/login-bg.svg') as background-image instead of inline SVG
-- Frosted glass card with backdrop-filter blur(24px)`;
+- Copied Bg-DirectorControl.png to frontend/src/assets/login-bg.png unchanged
+- Removed hand-drawn SVG replacement
+- CSS now references the real image via url('../assets/login-bg.png')
+- Updated fallback gradient to match image palette (near-white to light blue)
+- Frosted glass card with backdrop-filter blur(18px)`;
 
 async function run() {
   try {
