@@ -1,0 +1,93 @@
+.page { display: flex; flex-direction: column; gap: 20px; }
+
+.header { display: flex; align-items: center; justify-content: space-between; }
+.title { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border-subtle); }
+
+.tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px; background: none; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+
+.tab:hover { color: var(--text-primary); }
+.tabActive { color: var(--brand-primary); border-bottom-color: var(--brand-primary); font-weight: 600; }
+
+.tabCount {
+  padding: 1px 7px; background: var(--bg-muted);
+  border-radius: 10px; font-size: 11px; font-weight: 700; color: var(--text-muted);
+}
+
+.tabCountActive { background: var(--brand-light); color: var(--brand-text); }
+
+/* List */
+.list { display: flex; flex-direction: column; gap: 14px; }
+
+.card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 14px; padding: 18px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: box-shadow 0.15s;
+}
+
+.card:hover { box-shadow: var(--card-shadow); }
+.cardPending { border-left: 4px solid #f59e0b; }
+
+.cardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cardLeft { flex: 1; min-width: 0; }
+
+.typeLabel { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block; }
+.cardTitle { font-size: 16px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+
+.statusBadge { padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+.cardMeta { display: flex; flex-wrap: wrap; gap: 8px; }
+.metaChip { padding: 4px 10px; background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; font-size: 12px; color: var(--text-secondary); }
+
+.cardDesc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; padding: 12px; background: var(--bg-subtle); border-radius: 8px; border: 1px solid var(--border-subtle); }
+
+.remarks { font-size: 12px; color: var(--text-secondary); padding: 10px 14px; background: var(--bg-subtle); border-radius: 8px; border-left: 3px solid var(--border); }
+.remarksLabel { font-weight: 600; color: var(--text-primary); }
+
+/* Actions */
+.actions { display: flex; gap: 10px; padding-top: 4px; border-top: 1px solid var(--border-subtle); }
+
+.approveBtn {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; padding: 10px 16px;
+  background: var(--green-bg); border: 1.5px solid var(--green-border);
+  color: var(--green-text); border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all 0.15s; justify-content: center;
+}
+
+.approveBtn:hover:not(:disabled) { filter: brightness(0.95); }
+.approveBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.rejectBtn {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; padding: 10px 16px;
+  background: var(--red-bg); border: 1.5px solid var(--red-border);
+  color: var(--red-text); border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all 0.15s; justify-content: center;
+}
+
+.rejectBtn:hover:not(:disabled) { filter: brightness(0.95); }
+.rejectBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Empty */
+.empty { display: flex; flex-direction: column; align-items: center; padding: 60px 20px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; gap: 8px; }
+.emptyTitle { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.emptyText { font-size: 13px; color: var(--text-muted); }
+
+/* Skeleton */
+.skeletonList { display: flex; flex-direction: column; gap: 14px; }
+.skeletonItem { height: 140px; background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-to) 50%, var(--skeleton-from) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 14px; }
+
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }

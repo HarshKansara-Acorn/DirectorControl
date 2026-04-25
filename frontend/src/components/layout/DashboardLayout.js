@@ -168,7 +168,16 @@ const DashboardLayout = () => {
               onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); setShowSearch(false); }}
               aria-label="User menu"
             >
-              <div className={styles.userAvatar}>{user?.avatar || user?.name?.[0]}</div>
+              {user?.avatarPhoto ? (
+                <img src={user.avatarPhoto} alt={user.name} className={styles.userAvatarPhoto} />
+              ) : (
+                <div
+                  className={styles.userAvatar}
+                  style={user?.avatarColor ? { background: user.avatarColor } : {}}
+                >
+                  {user?.avatar || user?.name?.[0]}
+                </div>
+              )}
             </button>
 
             {showUserMenu && (
@@ -180,10 +189,10 @@ const DashboardLayout = () => {
                   </div>
                 </div>
                 <hr className={styles.divider} />
-                <button className={styles.userDropdownItem}>
+                <button className={styles.userDropdownItem} onClick={() => { setShowUserMenu(false); navigate('/profile'); }}>
                   <User size={15} /> Profile
                 </button>
-                <button className={styles.userDropdownItem}>
+                <button className={styles.userDropdownItem} onClick={() => { setShowUserMenu(false); navigate('/settings'); }}>
                   <Settings size={15} /> Settings
                 </button>
                 <hr className={styles.divider} />

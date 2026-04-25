@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import FormField, { Input, Textarea, Select, FormActions } from './FormField';
+import DirectorSelector from './DirectorSelector';
 import api from '../../services/api';
 
 const AddReminderModal = ({ directorId, onClose, onSuccess }) => {
   const [form, setForm] = useState({ title: '', description: '', dueDate: '', priority: 'medium' });
+  const [selectedDirectors, setSelectedDirectors] = useState(directorId ? [directorId] : []);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]     = useState('');
+  const [result, setResult]   = useState('');
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!selectedDirectors.length) return setError('Please select at least one director');
+    setError(''); setLoading(true);
+
     try {
-      await api.post('/reminders', { ...form, directorId });
-      onSuccess();
+      if (selectedDirectors.length === 1) {
+        await api.post('/reminders', { ...form, directorId: selectedDirectors[0] });
+        setResult('Reminder added successfully!');
+      } else {
+        const res = await api.post('/reminders/broadcast', { ...form, directorIds: selectedDirectors });
+        setResult(res.data.message);
+      }
+      setTimeout(() => onSuccess(), 800);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add reminder');
     } finally {
@@ -24,8 +35,14 @@ const AddReminderModal = ({ directorId, onClose, onSuccess }) => {
   };
 
   return (
-    <Modal title="Add Key Reminder" onClose={onClose}>
+    <Modal title="Add Key Reminder" onClose={onClose} size="lg">
       <form onSubmit={handleSubmit}>
+
+        <DirectorSelector
+          selected={selectedDirectors}
+          onChange={setSelectedDirectors}
+        />
+
         <FormField label="Title" required>
           <Input name="title" value={form.title} onChange={handleChange} placeholder="Reminder title" required />
         </FormField>
@@ -44,8 +61,15 @@ const AddReminderModal = ({ directorId, onClose, onSuccess }) => {
             </Select>
           </FormField>
         </div>
-        {error && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-        <FormActions onCancel={onClose} submitLabel="Add Reminder" loading={loading} />
+
+        {error  && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
+        {result && <p style={{ color: '#15803d', fontSize: 13, marginBottom: 12 }}>✅ {result}</p>}
+
+        <FormActions
+          onCancel={onClose}
+          submitLabel={selectedDirectors.length > 1 ? `Send to ${selectedDirectors.length} Directors` : 'Add Reminder'}
+          loading={loading}
+        />
       </form>
     </Modal>
   );

@@ -15,17 +15,19 @@
  */
 
 const axios = require('axios');
+const { query, queryOne, execute, sql } = require('../config/db');
 
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 
-// In-memory token store: { userId -> { accessToken, refreshToken, expiresAt, msUserEmail } }
+// In-memory cache: { userId -> { accessToken, refreshToken, expiresAt, msUserEmail } }
+// Backed by DC_TeamsTokens table for persistence across restarts.
 const tokenStore = {};
 
 /**
- * Build the OAuth2 authorization URL for a director to connect their Teams account.
- * @param {string} directorId - Our internal director ID (passed as state)
+ * Build the OAuth2 authorization URL.
+ * @param {string} state - JSON string containing { userId, returnTo }
  */
-const getAuthUrl = (directorId) => {
+const getAuthUrl = (state) => {
   const params = new URLSearchParams({
     client_id: process.env.AZURE_CLIENT_ID,
     response_type: 'code',
@@ -41,7 +43,7 @@ const getAuthUrl = (directorId) => {
       'Chat.Read',
       'MailboxSettings.Read',
     ].join(' '),
-    state: directorId,
+    state,
   });
 
   return `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/authorize?${params}`;
@@ -75,8 +77,8 @@ const exchangeCodeForTokens = async (code) => {
 /**
  * Refresh an expired access token using the refresh token.
  */
-const refreshAccessToken = async (directorId) => {
-  const stored = tokenStore[directorId];
+const refreshAccessToken = async (userId) => {
+  const stored = tokenStore[userId];
   if (!stored?.refreshToken) throw new Error('No refresh token available');
 
   const params = new URLSearchParams({
@@ -97,48 +99,128 @@ const refreshAccessToken = async (directorId) => {
     { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
   );
 
-  tokenStore[directorId] = {
-    ...stored,
-    accessToken: res.data.access_token,
+  const newTokens = {
+    accessToken:  res.data.access_token,
     refreshToken: res.data.refresh_token || stored.refreshToken,
-    expiresAt: Date.now() + res.data.expires_in * 1000,
+    expiresAt:    Date.now() + res.data.expires_in * 1000,
   };
 
-  return tokenStore[directorId].accessToken;
+  await storeTokens(userId, newTokens, stored.msUserEmail);
+  return newTokens.accessToken;
 };
 
 /**
- * Get a valid access token for a director, refreshing if needed.
+ * Get a valid access token for a user, loading from DB if needed, refreshing if expired.
  */
-const getValidToken = async (directorId) => {
-  const stored = tokenStore[directorId];
+const getValidToken = async (userId) => {
+  // Load from DB if not in memory
+  if (!tokenStore[userId]) {
+    await loadTokenFromDb(userId);
+  }
+  const stored = tokenStore[userId];
   if (!stored) return null;
 
   // Refresh if expiring within 5 minutes
   if (Date.now() >= stored.expiresAt - 5 * 60 * 1000) {
-    return await refreshAccessToken(directorId);
+    return await refreshAccessToken(userId);
   }
 
   return stored.accessToken;
 };
 
 /**
- * Store tokens after OAuth callback.
+ * Store tokens after OAuth callback — writes to DB and in-memory cache.
  */
-const storeTokens = (directorId, tokens, msUserEmail) => {
-  tokenStore[directorId] = { ...tokens, msUserEmail };
+const storeTokens = async (userId, tokens, msUserEmail) => {
+  tokenStore[userId] = { ...tokens, msUserEmail };
+  try {
+    // Upsert into DC_TeamsTokens
+    const exists = await queryOne(
+      'SELECT DirectorId FROM DC_TeamsTokens WHERE DirectorId = @id',
+      { id: { type: sql.NVarChar, value: userId } }
+    );
+    if (exists) {
+      await execute(
+        `UPDATE DC_TeamsTokens SET
+          AccessToken  = @at,
+          RefreshToken = @rt,
+          ExpiresAt    = @ea,
+          MsUserEmail  = @em,
+          UpdatedAt    = GETUTCDATE()
+        WHERE DirectorId = @id`,
+        {
+          at: { type: sql.NVarChar, value: tokens.accessToken },
+          rt: { type: sql.NVarChar, value: tokens.refreshToken || '' },
+          ea: { type: sql.BigInt,   value: tokens.expiresAt },
+          em: { type: sql.NVarChar, value: msUserEmail || '' },
+          id: { type: sql.NVarChar, value: userId },
+        }
+      );
+    } else {
+      await execute(
+        `INSERT INTO DC_TeamsTokens (DirectorId, AccessToken, RefreshToken, ExpiresAt, MsUserEmail)
+         VALUES (@id, @at, @rt, @ea, @em)`,
+        {
+          id: { type: sql.NVarChar, value: userId },
+          at: { type: sql.NVarChar, value: tokens.accessToken },
+          rt: { type: sql.NVarChar, value: tokens.refreshToken || '' },
+          ea: { type: sql.BigInt,   value: tokens.expiresAt },
+          em: { type: sql.NVarChar, value: msUserEmail || '' },
+        }
+      );
+    }
+  } catch (err) {
+    console.error('TeamsTokens DB write error:', err.message);
+  }
 };
 
 /**
- * Check if a director has connected their Teams account.
+ * Load tokens from DB into memory cache on startup / on demand.
  */
-const isConnected = (directorId) => !!tokenStore[directorId];
+const loadTokenFromDb = async (userId) => {
+  try {
+    const row = await queryOne(
+      'SELECT AccessToken, RefreshToken, ExpiresAt, MsUserEmail FROM DC_TeamsTokens WHERE DirectorId = @id',
+      { id: { type: sql.NVarChar, value: userId } }
+    );
+    if (row) {
+      tokenStore[userId] = {
+        accessToken:  row.AccessToken,
+        refreshToken: row.RefreshToken,
+        expiresAt:    Number(row.ExpiresAt),
+        msUserEmail:  row.MsUserEmail,
+      };
+      return tokenStore[userId];
+    }
+  } catch (err) {
+    console.error('TeamsTokens DB read error:', err.message);
+  }
+  return null;
+};
 
 /**
- * Disconnect a director's Teams account.
+ * Check if a user has connected their Teams account.
+ * Checks memory first, then DB.
  */
-const disconnect = (directorId) => {
-  delete tokenStore[directorId];
+const isConnected = async (userId) => {
+  if (tokenStore[userId]) return true;
+  const row = await loadTokenFromDb(userId);
+  return !!row;
+};
+
+/**
+ * Disconnect a user's Teams account — removes from DB and memory.
+ */
+const disconnect = async (userId) => {
+  delete tokenStore[userId];
+  try {
+    await execute(
+      'DELETE FROM DC_TeamsTokens WHERE DirectorId = @id',
+      { id: { type: sql.NVarChar, value: userId } }
+    );
+  } catch (err) {
+    console.error('TeamsTokens DB delete error:', err.message);
+  }
 };
 
 /**
@@ -379,6 +461,7 @@ module.exports = {
   storeTokens,
   isConnected,
   disconnect,
+  loadTokenFromDb,
   getValidToken,
   getCalendarEvents,
   getTodayEvents,

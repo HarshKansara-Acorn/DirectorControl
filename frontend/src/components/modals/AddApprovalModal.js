@@ -1,24 +1,35 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import FormField, { Input, Textarea, Select, FormActions } from './FormField';
+import DirectorSelector from './DirectorSelector';
 import api from '../../services/api';
 
 const AddApprovalModal = ({ directorId, onClose, onSuccess }) => {
   const [form, setForm] = useState({
     type: 'leave', title: '', description: '',
-    fromName: '', fromEmail: '', priority: 'normal', dueDate: ''
+    fromName: '', fromEmail: '', priority: 'normal', dueDate: '',
   });
+  const [selectedDirectors, setSelectedDirectors] = useState(directorId ? [directorId] : []);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]     = useState('');
+  const [result, setResult]   = useState('');
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!selectedDirectors.length) return setError('Please select at least one director');
+    setError(''); setLoading(true);
+
     try {
-      await api.post('/approvals', { ...form, directorId });
-      onSuccess();
+      if (selectedDirectors.length === 1) {
+        await api.post('/approvals', { ...form, directorId: selectedDirectors[0] });
+        setResult('Approval request added successfully!');
+      } else {
+        const res = await api.post('/approvals/broadcast', { ...form, directorIds: selectedDirectors });
+        setResult(res.data.message);
+      }
+      setTimeout(() => onSuccess(), 800);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add approval');
     } finally {
@@ -27,8 +38,14 @@ const AddApprovalModal = ({ directorId, onClose, onSuccess }) => {
   };
 
   return (
-    <Modal title="Add Pending Approval" onClose={onClose}>
+    <Modal title="Add Pending Approval" onClose={onClose} size="lg">
       <form onSubmit={handleSubmit}>
+
+        <DirectorSelector
+          selected={selectedDirectors}
+          onChange={setSelectedDirectors}
+        />
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <FormField label="Type">
             <Select name="type" value={form.type} onChange={handleChange}>
@@ -63,8 +80,15 @@ const AddApprovalModal = ({ directorId, onClose, onSuccess }) => {
         <FormField label="Due Date">
           <Input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
         </FormField>
-        {error && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-        <FormActions onCancel={onClose} submitLabel="Add Approval" loading={loading} />
+
+        {error  && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
+        {result && <p style={{ color: '#15803d', fontSize: 13, marginBottom: 12 }}>✅ {result}</p>}
+
+        <FormActions
+          onCancel={onClose}
+          submitLabel={selectedDirectors.length > 1 ? `Send to ${selectedDirectors.length} Directors` : 'Add Approval'}
+          loading={loading}
+        />
       </form>
     </Modal>
   );

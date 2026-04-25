@@ -53,6 +53,40 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// POST /api/reminders/broadcast — send same reminder to multiple directors
+router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
+  const { title, description, directorIds, dueDate, priority } = req.body;
+  if (!title || !directorIds?.length)
+    return res.status(400).json({ message: 'Title and at least one directorId are required' });
+
+  try {
+    const created = [];
+    for (const directorId of directorIds) {
+      const id = uuidv4();
+      await execute(
+        'INSERT INTO DC_Reminders (Id,Title,Description,DirectorId,DueDate,Priority,IsActive,CreatedBy) VALUES (@id,@title,@desc,@directorId,@dueDate,@priority,1,@createdBy)',
+        {
+          id:         { type: sql.NVarChar, value: id },
+          title:      { type: sql.NVarChar, value: title },
+          desc:       { type: sql.NVarChar, value: description || '' },
+          directorId: { type: sql.NVarChar, value: directorId },
+          dueDate:    { type: sql.Date,     value: dueDate ? new Date(dueDate) : null },
+          priority:   { type: sql.NVarChar, value: priority || 'medium' },
+          createdBy:  { type: sql.NVarChar, value: req.user.id },
+        }
+      );
+      created.push(id);
+    }
+    res.status(201).json({
+      message: `Reminder sent to ${created.length} director(s)`,
+      count: created.length,
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Failed to broadcast reminder' });
+  }
+});
+
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   const { title, description, dueDate, priority, isActive } = req.body;
   try {

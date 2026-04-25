@@ -1,0 +1,112 @@
+.layout { min-height: 100vh; background: var(--bg-app); display: flex; flex-direction: column; }
+
+.header {
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 0 24px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--header-shadow); transition: background 0.2s;
+}
+
+.headerLeft { display: flex; align-items: center; gap: 28px; }
+.headerRight { display: flex; align-items: center; gap: 8px; }
+
+/* Brand */
+.brand { display: flex; align-items: center; gap: 10px; }
+
+.logoIcon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: white; flex-shrink: 0;
+}
+
+.brandName { font-size: 15px; font-weight: 700; color: var(--text-primary); display: block; }
+
+.rolePill {
+  display: inline-block; padding: 1px 8px;
+  background: var(--brand-light); color: var(--brand-text);
+  border-radius: 10px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px;
+}
+
+/* Nav */
+.nav { display: flex; align-items: center; gap: 2px; }
+
+.navLink {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 500;
+  color: var(--nav-link); text-decoration: none; transition: all 0.15s;
+}
+
+.navLink:hover { background: var(--bg-hover); color: var(--text-primary); }
+.navLinkActive { background: var(--nav-active-bg); color: var(--nav-active); font-weight: 600; }
+
+/* Icon Buttons */
+.iconBtn {
+  position: relative; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 8px;
+  cursor: pointer; color: var(--text-secondary); transition: all 0.15s;
+}
+
+.iconBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.iconBtnActive { background: var(--bg-active); color: var(--brand-primary); }
+
+.notifBadge {
+  position: absolute; top: 4px; right: 4px;
+  min-width: 16px; height: 16px;
+  background: #ef4444; color: white;
+  border-radius: 8px; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; padding: 0 3px;
+}
+
+.notifWrapper { position: relative; }
+
+/* User Menu */
+.userMenu { position: relative; }
+.userBtn { background: none; border: none; cursor: pointer; padding: 0; border-radius: 50%; }
+
+.userAvatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: white;
+}
+
+.userAvatarPhoto {
+  width: 36px; height: 36px;
+  border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--border);
+  display: block;
+}
+
+.userDropdown {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  min-width: 220px; z-index: 200; overflow: hidden;
+}
+
+.userInfo { padding: 14px 16px; }
+.userInfoName { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.userInfoRole { font-size: 11px; color: var(--brand-text); font-weight: 600; margin-top: 2px; }
+.userInfoEmail { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.divider { border: none; border-top: 1px solid var(--border-subtle); margin: 0; }
+
+.dropdownItem {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 16px;
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; color: var(--text-primary);
+  text-align: left; transition: background 0.15s; font-family: inherit;
+}
+
+.dropdownItem:hover { background: var(--bg-hover); }
+.logoutItem { color: #ef4444; }
+.logoutItem:hover { background: var(--red-bg); }
+
+/* Main */
+.main { flex: 1; padding: 28px; max-width: 1200px; width: 100%; margin: 0 auto; }

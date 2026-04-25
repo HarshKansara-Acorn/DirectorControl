@@ -28,7 +28,10 @@ const MeetingsCard = ({ meetings, onRefresh, activeDirectorId }) => {
                 <div className={styles.itemLeft}>
                   <div className={styles.timeTag}>{m.time}</div>
                   <div>
-                    <div className={styles.itemTitle}>{m.title}</div>
+                    <div className={styles.itemTitle}>
+                      {m.isShared && <span style={{ fontSize: 10, background: '#eff6ff', color: '#1e40af', padding: '1px 5px', borderRadius: 6, marginRight: 5, fontWeight: 700 }}>👥 All</span>}
+                      {m.title}
+                    </div>
                     <div className={styles.itemSub}>{m.location || 'No location'}</div>
                   </div>
                 </div>

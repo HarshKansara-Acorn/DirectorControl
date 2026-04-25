@@ -45,12 +45,13 @@ const Teams = () => {
   // ── Check URL params after OAuth redirect ──────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('connected') === 'true') {
+    if (params.get('connected') === 'true' || params.get('teamsConnected') === 'true') {
       setSyncMsg('✅ Teams account connected successfully!');
       setTimeout(() => setSyncMsg(''), 4000);
     }
-    if (params.get('error')) {
-      setSyncMsg(`❌ ${decodeURIComponent(params.get('error'))}`);
+    if (params.get('error') || params.get('teamsError')) {
+      const errMsg = params.get('error') || params.get('teamsError');
+      setSyncMsg(`❌ ${decodeURIComponent(errMsg)}`);
     }
   }, [location.search]);
 
@@ -58,7 +59,7 @@ const Teams = () => {
   const fetchStatus = useCallback(async () => {
     if (!activeDirectorId) return;
     try {
-      const res = await api.get('/teams/status', { params: { directorId: activeDirectorId } });
+      const res = await api.get('/teams/status', { params: { userId: activeDirectorId } });
       setStatus(res.data);
     } catch { setStatus({ connected: false, configured: false }); }
   }, [activeDirectorId]);
@@ -68,7 +69,7 @@ const Teams = () => {
     if (!activeDirectorId) return;
     setLoading(true);
     try {
-      const res = await api.get('/teams/summary', { params: { directorId: activeDirectorId } });
+      const res = await api.get('/teams/summary', { params: { userId: activeDirectorId } });
       setSummary(res.data);
     } catch (err) {
       if (err.response?.status === 404) setSummary(null);
@@ -81,10 +82,12 @@ const Teams = () => {
   }, [fetchStatus, fetchSummary]);
 
   // ── Connect Teams ──────────────────────────────────────────────────────────
-  const handleConnect = async (directorId) => {
-    setConnectingId(directorId);
+  const handleConnect = async (userId) => {
+    setConnectingId(userId);
     try {
-      const res = await api.get('/teams/auth/connect', { params: { directorId } });
+      const res = await api.get('/teams/auth/connect', {
+        params: { userId, returnTo: 'teams' },
+      });
       if (res.data.authUrl) {
         window.location.href = res.data.authUrl;
       } else {
@@ -98,7 +101,7 @@ const Teams = () => {
   // ── Disconnect Teams ───────────────────────────────────────────────────────
   const handleDisconnect = async () => {
     try {
-      await api.post('/teams/auth/disconnect', { directorId: activeDirectorId });
+      await api.post('/teams/auth/disconnect', { userId: activeDirectorId });
       setStatus({ connected: false, configured: status.configured });
       setSummary(null);
       setSyncMsg('Teams account disconnected.');
@@ -530,7 +533,7 @@ const DirectorConnCard = ({ director, onConnect, connectingId }) => {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
-    api.get('/teams/status', { params: { directorId: director.id } })
+    api.get('/teams/status', { params: { userId: director.id } })
       .then(r => setStatus(r.data))
       .catch(() => setStatus({ connected: false }));
   }, [director.id]);

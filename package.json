@@ -3,5 +3,8 @@
     "bcrypt": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mssql": "^12.5.0"
+  },
+  "devDependencies": {
+    "simple-git": "^3.36.0"
   }
 }

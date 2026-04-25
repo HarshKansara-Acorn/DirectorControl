@@ -142,6 +142,13 @@
   font-size: 13px; font-weight: 700; color: white;
 }
 
+.userAvatarPhoto {
+  width: 36px; height: 36px;
+  border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--border);
+  display: block;
+}
+
 .userDropdown {
   position: absolute; top: calc(100% + 8px); right: 0;
   background: var(--card-bg);

@@ -2,21 +2,24 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const teamsService = require('../services/teamsService');
-const { users } = require('../data/mockData');
+const { execute, query, sql } = require('../config/db');
+const { v4: uuidv4 } = require('uuid');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OAuth Flow
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * GET /api/teams/auth/connect?directorId=xxx
- * Redirects the director (or PA on their behalf) to Microsoft login.
+ * GET /api/teams/auth/connect?userId=xxx&returnTo=settings|teams
+ * Any authenticated user can connect their own account.
+ * Admin can also connect on behalf of another user by passing userId.
  */
 router.get('/auth/connect', authenticateToken, (req, res) => {
-  const directorId = req.query.directorId || req.user.id;
+  const targetId  = req.query.userId || req.user.id;
+  const returnTo  = req.query.returnTo || 'settings'; // 'settings' or 'teams'
 
-  // Only admin can connect on behalf of a director
-  if (req.user.role !== 'admin' && req.user.id !== directorId) {
+  // Only admin can connect on behalf of someone else
+  if (req.user.role !== 'admin' && req.user.id !== targetId) {
     return res.status(403).json({ message: 'Not authorized' });
   }
 
@@ -27,54 +30,71 @@ router.get('/auth/connect', authenticateToken, (req, res) => {
     });
   }
 
-  const authUrl = teamsService.getAuthUrl(directorId);
+  // Encode both userId and returnTo in the state param
+  const state = JSON.stringify({ userId: targetId, returnTo });
+  const authUrl = teamsService.getAuthUrl(state);
   res.json({ authUrl });
 });
 
 /**
- * GET /api/teams/auth/callback?code=xxx&state=directorId
+ * GET /api/teams/auth/callback?code=xxx&state=...
  * Microsoft redirects here after user consents.
+ * State contains { userId, returnTo }.
  */
 router.get('/auth/callback', async (req, res) => {
-  const { code, state: directorId, error, error_description } = req.query;
+  const { code, state: rawState, error, error_description } = req.query;
+
+  // Parse state — support both old plain-string format and new JSON format
+  let userId, returnTo;
+  try {
+    const parsed = JSON.parse(rawState);
+    userId   = parsed.userId;
+    returnTo = parsed.returnTo || 'settings';
+  } catch {
+    // Legacy: state was just the directorId string
+    userId   = rawState;
+    returnTo = 'teams';
+  }
+
+  const redirectBase = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const returnPath   = returnTo === 'teams' ? '/teams' : '/settings?section=linked';
 
   if (error) {
     return res.redirect(
-      `${process.env.FRONTEND_URL}/teams?error=${encodeURIComponent(error_description || error)}`
+      `${redirectBase}${returnPath}&teamsError=${encodeURIComponent(error_description || error)}`
     );
   }
 
-  if (!code || !directorId) {
-    return res.redirect(`${process.env.FRONTEND_URL}/teams?error=Invalid+callback`);
+  if (!code || !userId) {
+    return res.redirect(`${redirectBase}${returnPath}&teamsError=Invalid+callback`);
   }
 
   try {
-    const tokens = await teamsService.exchangeCodeForTokens(code);
-    // Get the MS user profile to store their email
-    teamsService.storeTokens(directorId, tokens, '');
-    const profile = await teamsService.getUserProfile(directorId);
-    teamsService.storeTokens(directorId, tokens, profile.email);
+    const tokens  = await teamsService.exchangeCodeForTokens(code);
+    // Temporarily store with empty email so we can call getUserProfile
+    await teamsService.storeTokens(userId, tokens, '');
+    const profile = await teamsService.getUserProfile(userId);
+    await teamsService.storeTokens(userId, tokens, profile.email);
 
-    res.redirect(`${process.env.FRONTEND_URL}/teams?connected=true&directorId=${directorId}`);
+    res.redirect(`${redirectBase}${returnPath}&teamsConnected=true&userId=${userId}`);
   } catch (err) {
     console.error('Teams OAuth callback error:', err.message);
-    res.redirect(`${process.env.FRONTEND_URL}/teams?error=${encodeURIComponent('Authentication failed')}`);
+    res.redirect(`${redirectBase}${returnPath}&teamsError=${encodeURIComponent('Authentication failed')}`);
   }
 });
 
 /**
  * POST /api/teams/auth/disconnect
- * Disconnect a director's Teams account.
+ * Any user can disconnect their own account. Admin can disconnect any user.
  */
-router.post('/auth/disconnect', authenticateToken, (req, res) => {
-  const { directorId } = req.body;
-  const targetId = directorId || req.user.id;
+router.post('/auth/disconnect', authenticateToken, async (req, res) => {
+  const targetId = req.body.userId || req.body.directorId || req.user.id;
 
   if (req.user.role !== 'admin' && req.user.id !== targetId) {
     return res.status(403).json({ message: 'Not authorized' });
   }
 
-  teamsService.disconnect(targetId);
+  await teamsService.disconnect(targetId);
   res.json({ message: 'Teams account disconnected' });
 });
 
@@ -83,13 +103,16 @@ router.post('/auth/disconnect', authenticateToken, (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * GET /api/teams/status?directorId=xxx
- * Returns connection status for a director.
+ * GET /api/teams/status?userId=xxx
+ * Returns connection status for any user.
+ * Falls back to directorId param for backwards compatibility.
  */
-router.get('/status', authenticateToken, (req, res) => {
-  const directorId = req.query.directorId || req.user.id;
-  const connected = teamsService.isConnected(directorId);
-  const stored = teamsService.tokenStore[directorId];
+router.get('/status', authenticateToken, async (req, res) => {
+  const targetId = req.query.userId || req.query.directorId || req.user.id;
+  const connected = await teamsService.isConnected(targetId);
+
+  // Load from cache (populated by isConnected above)
+  const stored = teamsService.tokenStore[targetId];
 
   res.json({
     connected,
@@ -103,18 +126,17 @@ router.get('/status', authenticateToken, (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * GET /api/teams/summary?directorId=xxx
- * Full Teams data summary — calendar, tasks, presence, mailbox, chats.
+ * GET /api/teams/summary?userId=xxx
  */
 router.get('/summary', authenticateToken, async (req, res) => {
-  const directorId = req.query.directorId || req.user.id;
+  const targetId = req.query.userId || req.query.directorId || req.user.id;
 
-  if (!teamsService.isConnected(directorId)) {
-    return res.status(404).json({ message: 'Teams not connected for this director', connected: false });
+  if (!(await teamsService.isConnected(targetId))) {
+    return res.status(404).json({ message: 'Teams not connected for this user', connected: false });
   }
 
   try {
-    const summary = await teamsService.getTeamsSummary(directorId);
+    const summary = await teamsService.getTeamsSummary(targetId);
     res.json({ connected: true, ...summary });
   } catch (err) {
     if (err.message === 'NOT_CONNECTED') {
@@ -126,19 +148,18 @@ router.get('/summary', authenticateToken, async (req, res) => {
 });
 
 /**
- * GET /api/teams/calendar?directorId=xxx&days=30
- * Calendar events from Microsoft.
+ * GET /api/teams/calendar?userId=xxx&days=30
  */
 router.get('/calendar', authenticateToken, async (req, res) => {
-  const directorId = req.query.directorId || req.user.id;
+  const targetId = req.query.userId || req.query.directorId || req.user.id;
   const days = parseInt(req.query.days) || 30;
 
-  if (!teamsService.isConnected(directorId)) {
+  if (!(await teamsService.isConnected(targetId))) {
     return res.status(404).json({ message: 'Teams not connected', connected: false });
   }
 
   try {
-    const events = await teamsService.getCalendarEvents(directorId, days);
+    const events = await teamsService.getCalendarEvents(targetId, days);
     res.json(events);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch calendar', error: err.message });
@@ -146,18 +167,17 @@ router.get('/calendar', authenticateToken, async (req, res) => {
 });
 
 /**
- * GET /api/teams/today?directorId=xxx
- * Today's calendar events — used to enrich the Dashboard meetings card.
+ * GET /api/teams/today?userId=xxx
  */
 router.get('/today', authenticateToken, async (req, res) => {
-  const directorId = req.query.directorId || req.user.id;
+  const targetId = req.query.userId || req.query.directorId || req.user.id;
 
-  if (!teamsService.isConnected(directorId)) {
+  if (!(await teamsService.isConnected(targetId))) {
     return res.json([]);
   }
 
   try {
-    const events = await teamsService.getTodayEvents(directorId);
+    const events = await teamsService.getTodayEvents(targetId);
     res.json(events);
   } catch (err) {
     res.json([]);
@@ -165,18 +185,17 @@ router.get('/today', authenticateToken, async (req, res) => {
 });
 
 /**
- * GET /api/teams/tasks?directorId=xxx
- * Microsoft To Do tasks.
+ * GET /api/teams/tasks?userId=xxx
  */
 router.get('/tasks', authenticateToken, async (req, res) => {
-  const directorId = req.query.directorId || req.user.id;
+  const targetId = req.query.userId || req.query.directorId || req.user.id;
 
-  if (!teamsService.isConnected(directorId)) {
+  if (!(await teamsService.isConnected(targetId))) {
     return res.status(404).json({ message: 'Teams not connected', connected: false });
   }
 
   try {
-    const tasks = await teamsService.getTasks(directorId);
+    const tasks = await teamsService.getTasks(targetId);
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch tasks', error: err.message });
@@ -184,18 +203,17 @@ router.get('/tasks', authenticateToken, async (req, res) => {
 });
 
 /**
- * GET /api/teams/presence?directorId=xxx
- * Director's current Teams presence.
+ * GET /api/teams/presence?userId=xxx
  */
 router.get('/presence', authenticateToken, async (req, res) => {
-  const directorId = req.query.directorId || req.user.id;
+  const targetId = req.query.userId || req.query.directorId || req.user.id;
 
-  if (!teamsService.isConnected(directorId)) {
+  if (!(await teamsService.isConnected(targetId))) {
     return res.json({ availability: 'Unknown', activity: 'Unknown' });
   }
 
   try {
-    const presence = await teamsService.getPresence(directorId);
+    const presence = await teamsService.getPresence(targetId);
     res.json(presence);
   } catch (err) {
     res.json({ availability: 'Unknown', activity: 'Unknown' });
@@ -203,54 +221,64 @@ router.get('/presence', authenticateToken, async (req, res) => {
 });
 
 /**
- * POST /api/teams/sync?directorId=xxx
- * Sync Teams calendar events into our local events store.
- * PA can trigger this to import Teams meetings into DirectorControl.
+ * POST /api/teams/sync
+ * Sync Teams calendar events into DC_Events table.
+ * Admin only — can sync for any director.
  */
 router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
   const { directorId } = req.body;
 
-  if (!teamsService.isConnected(directorId)) {
+  if (!(await teamsService.isConnected(directorId))) {
     return res.status(404).json({ message: 'Teams not connected for this director' });
   }
 
   try {
-    const { events } = require('../data/mockData');
     const calEvents = await teamsService.getCalendarEvents(directorId, 60);
 
     let added = 0;
     let skipped = 0;
 
-    calEvents.forEach(te => {
-      // Skip if already synced (check by teams source id)
-      const exists = events.find(e => e.teamsId === te.id);
-      if (exists) { skipped++; return; }
+    for (const te of calEvents) {
+      // Check if already synced by TeamsId
+      const existing = await query(
+        'SELECT Id FROM DC_Events WHERE TeamsId = @tid',
+        { tid: { type: sql.NVarChar, value: te.id } }
+      );
 
-      events.push({
-        id: require('uuid').v4(),
-        teamsId: te.id,
-        source: 'teams',
-        title: te.title,
-        description: te.description,
-        type: te.isTeamsMeeting ? 'teams_meeting' : 'meeting',
-        directorId,
-        startDate: te.startDate,
-        endDate: te.endDate,
-        startTime: te.startTime,
-        endTime: te.endTime,
-        location: te.location,
-        attendees: te.attendees,
-        isAllDay: te.isAllDay,
-        priority: te.importance === 'high' ? 'high' : 'medium',
-        status: 'upcoming',
-        joinUrl: te.joinUrl,
-        organizer: te.organizer,
-        notes: '',
-        createdBy: req.user.id,
-        createdAt: new Date().toISOString(),
-      });
+      if (existing.length > 0) { skipped++; continue; }
+
+      await execute(
+        `INSERT INTO DC_Events
+          (Id, Title, Description, Type, DirectorId, StartDate, EndDate,
+           StartTime, EndTime, Location, Attendees, IsAllDay, Priority,
+           Status, Notes, TeamsId, JoinUrl, Source, CreatedBy, CreatedAt)
+         VALUES
+          (@id, @title, @desc, @type, @did, @sd, @ed,
+           @st, @et, @loc, @att, @allday, @pri,
+           @status, @notes, @tid, @jurl, 'teams', @cb, GETUTCDATE())`,
+        {
+          id:     { type: sql.NVarChar, value: uuidv4() },
+          title:  { type: sql.NVarChar, value: te.title },
+          desc:   { type: sql.NVarChar, value: te.description || '' },
+          type:   { type: sql.NVarChar, value: te.isTeamsMeeting ? 'teams_meeting' : 'meeting' },
+          did:    { type: sql.NVarChar, value: directorId },
+          sd:     { type: sql.Date,     value: te.startDate },
+          ed:     { type: sql.Date,     value: te.endDate || te.startDate },
+          st:     { type: sql.NVarChar, value: te.startTime || '' },
+          et:     { type: sql.NVarChar, value: te.endTime || '' },
+          loc:    { type: sql.NVarChar, value: te.location || '' },
+          att:    { type: sql.NVarChar, value: (te.attendees || []).join(', ') },
+          allday: { type: sql.Bit,      value: te.isAllDay ? 1 : 0 },
+          pri:    { type: sql.NVarChar, value: te.importance === 'high' ? 'high' : 'medium' },
+          status: { type: sql.NVarChar, value: 'upcoming' },
+          notes:  { type: sql.NVarChar, value: '' },
+          tid:    { type: sql.NVarChar, value: te.id },
+          jurl:   { type: sql.NVarChar, value: te.joinUrl || '' },
+          cb:     { type: sql.NVarChar, value: req.user.id },
+        }
+      );
       added++;
-    });
+    }
 
     res.json({ message: `Sync complete. Added: ${added}, Skipped (already exists): ${skipped}` });
   } catch (err) {

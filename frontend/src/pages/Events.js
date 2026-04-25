@@ -5,6 +5,7 @@ import api from '../services/api';
 import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
 import { Calendar, MapPin, Users, Clock, Edit2, Trash2, Plus } from 'lucide-react';
+import DirectorSelector from '../components/modals/DirectorSelector';
 import styles from './PageLayout.module.css';
 
 const TYPE_STYLES = {
@@ -30,10 +31,10 @@ const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all');
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [selectedDirectors, setSelectedDirectors] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -49,17 +50,31 @@ const Events = () => {
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
-  const openAdd = () => { setEditItem(null); setForm(EMPTY_FORM); setError(''); setShowModal(true); };
+  const openAdd = () => {
+    setEditItem(null);
+    setForm(EMPTY_FORM);
+    setSelectedDirectors(activeDirectorId ? [activeDirectorId] : []);
+    setError('');
+    setShowModal(true);
+  };
   const openEdit = (item) => {
     setEditItem(item);
+    setSelectedDirectors(item.directorIds?.length ? item.directorIds : (item.directorId ? [item.directorId] : []));
     setForm({ title: item.title, description: item.description || '', type: item.type, startDate: item.startDate, endDate: item.endDate || item.startDate, startTime: item.startTime || '09:00', endTime: item.endTime || '10:00', location: item.location || '', attendees: (item.attendees || []).join(', '), isAllDay: item.isAllDay || false, priority: item.priority || 'medium', notes: item.notes || '' });
     setError(''); setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setSaving(true); setError('');
+    e.preventDefault();
+    if (!selectedDirectors.length) return setError('Please select at least one director');
+    setSaving(true); setError('');
     try {
-      const payload = { ...form, directorId: activeDirectorId, attendees: form.attendees ? form.attendees.split(',').map(a => a.trim()).filter(Boolean) : [] };
+      const payload = {
+        ...form,
+        directorId: selectedDirectors[0],
+        directorIds: selectedDirectors,
+        attendees: form.attendees ? form.attendees.split(',').map(a => a.trim()).filter(Boolean) : [],
+      };
       if (editItem) { await api.put(`/events/${editItem.id}`, payload); }
       else { await api.post('/events', payload); }
       setShowModal(false); fetchEvents();
@@ -150,6 +165,11 @@ const Events = () => {
                             </div>
                           </div>
                           <div className={styles.eventBadges}>
+                            {item.isShared && (
+                              <span className={styles.statusBadge} style={{ background: '#eff6ff', color: '#1e40af' }}>
+                                👥 Shared
+                              </span>
+                            )}
                             <span className={styles.statusBadge} style={{ background: t.bg, color: t.color }}>{t.label}</span>
                             <span className={styles.statusBadge} style={{ background: p.bg, color: p.color }}>{item.priority}</span>
                           </div>
@@ -177,6 +197,13 @@ const Events = () => {
       {showModal && (
         <Modal title={editItem ? 'Edit Event' : 'Add Event'} onClose={() => setShowModal(false)} size="lg">
           <form onSubmit={handleSubmit}>
+            {/* Director selector — only show for new events or when admin */}
+            {isAdmin && !editItem && (
+              <DirectorSelector
+                selected={selectedDirectors}
+                onChange={setSelectedDirectors}
+              />
+            )}
             <FormField label="Title" required>
               <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Event title" required />
             </FormField>
@@ -223,7 +250,11 @@ const Events = () => {
               <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Additional notes..." />
             </FormField>
             {error && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-            <FormActions onCancel={() => setShowModal(false)} submitLabel={editItem ? 'Save Changes' : 'Add Event'} loading={saving} />
+            <FormActions
+              onCancel={() => setShowModal(false)}
+              submitLabel={editItem ? 'Save Changes' : selectedDirectors.length > 1 ? `Share with ${selectedDirectors.length} Directors` : 'Add Event'}
+              loading={saving}
+            />
           </form>
         </Modal>
       )}

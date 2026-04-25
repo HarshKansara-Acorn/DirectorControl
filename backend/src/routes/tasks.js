@@ -66,6 +66,45 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// POST /api/tasks/broadcast — create the same task for multiple directors at once
+router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
+  const { title, description, priority, status, directorIds, dueDate, tags } = req.body;
+
+  if (!title || !directorIds?.length)
+    return res.status(400).json({ message: 'Title and at least one directorId are required' });
+
+  try {
+    const created = [];
+    for (const directorId of directorIds) {
+      const id = uuidv4();
+      await execute(
+        `INSERT INTO DC_Tasks (Id,Title,Description,Priority,Status,AssignedTo,CreatedBy,DueDate,Tags)
+         VALUES (@id,@title,@desc,@priority,@status,@assignedTo,@createdBy,@dueDate,@tags)`,
+        {
+          id:         { type: sql.NVarChar, value: id },
+          title:      { type: sql.NVarChar, value: title },
+          desc:       { type: sql.NVarChar, value: description || '' },
+          priority:   { type: sql.NVarChar, value: priority || 'medium' },
+          status:     { type: sql.NVarChar, value: status || 'todo' },
+          assignedTo: { type: sql.NVarChar, value: directorId },
+          createdBy:  { type: sql.NVarChar, value: req.user.id },
+          dueDate:    { type: sql.Date,     value: dueDate ? new Date(dueDate) : null },
+          tags:       { type: sql.NVarChar, value: JSON.stringify(tags || []) },
+        }
+      );
+      created.push(id);
+    }
+    res.status(201).json({
+      message: `Task created for ${created.length} director(s)`,
+      count: created.length,
+      ids: created,
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Failed to broadcast task' });
+  }
+});
+
 // PUT /api/tasks/:id
 router.put('/:id', authenticateToken, async (req, res) => {
   const { title, description, priority, status, dueDate, tags } = req.body;
