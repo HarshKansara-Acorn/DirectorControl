@@ -19,10 +19,10 @@
   --text-muted:    #94a3b8;
   --text-disabled: #cbd5e1;
 
-  /* Brand */
-  --brand-primary: #1e40af;
-  --brand-light:   #eff6ff;
-  --brand-text:    #1e40af;
+  /* Brand — sky blue palette derived from login background image */
+  --brand-primary: #0369a1;
+  --brand-light:   #e0f2fe;
+  --brand-text:    #0369a1;
 
   /* Header */
   --header-bg:     #ffffff;
@@ -31,8 +31,8 @@
 
   /* Nav */
   --nav-link:      #64748b;
-  --nav-active-bg: #eff6ff;
-  --nav-active:    #1e40af;
+  --nav-active-bg: #e0f2fe;
+  --nav-active:    #0369a1;
 
   /* Cards */
   --card-bg:       #ffffff;
@@ -88,17 +88,17 @@
   --text-muted:    #64748b;
   --text-disabled: #475569;
 
-  --brand-primary: #3b82f6;
-  --brand-light:   #1e3a5f;
-  --brand-text:    #93c5fd;
+  --brand-primary: #38bdf8;
+  --brand-light:   #0c4a6e;
+  --brand-text:    #7dd3fc;
 
   --header-bg:     #1e293b;
   --header-border: #334155;
   --header-shadow: 0 1px 3px rgba(0,0,0,0.3);
 
   --nav-link:      #94a3b8;
-  --nav-active-bg: #1e3a5f;
-  --nav-active:    #93c5fd;
+  --nav-active-bg: #0c4a6e;
+  --nav-active:    #7dd3fc;
 
   --card-bg:       #1e293b;
   --card-border:   #334155;

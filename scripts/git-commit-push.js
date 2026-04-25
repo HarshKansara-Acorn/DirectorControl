@@ -16,22 +16,15 @@ const git = simpleGit({
   maxConcurrentProcesses: 1,
 });
 
-const commitMessage = `feat: Teams OAuth, profile photo upload, 2FA TOTP, sign-up/forgot-password, real user names & emails
+const commitMessage = `style: login background with cybersecurity theme, sky-blue brand palette
 
-- Microsoft Teams OAuth2 integration with DB-persisted tokens
-- Profile photo upload with canvas crop/resize modal (0-100% zoom)
-- Full TOTP 2FA: QR code setup, login challenge, secure disable flow
-- Sign Up page with password strength meter and domain restriction
-- Forgot Password: secure token generation, reset link shown on screen
-- Reset Password page with token validation and single-use enforcement
-- Updated user names: Chintan Patel, Dhruval Patel, Gaumish Patel, Umesh Savaliya
-- Updated login emails to firstname.lastname@acornuniversalconsultancy.com
-- AuthContext refreshes profile from DB on every app load
-- Express JSON body limit raised to 10mb for photo uploads
-- Director portal: Tasks, Reminders, Approvals pages
-- Settings: live Linked Accounts with Teams connect/disconnect
-- Project summary document + PDF
-- Password reset columns migration`;
+- Login page: light blue gradient background matching the cybersecurity image
+  (white-left to sky-blue-right with network nodes, binary text, padlock SVG)
+- Frosted glass card with backdrop-filter blur on login page
+- All login form elements (inputs, buttons, tabs, labels) restyled to sky-blue palette
+- App-wide brand colour updated from deep blue (#1e40af) to sky blue (#0369a1)
+- Nav active states, logo icons, user avatars updated to match
+- Dark mode brand colours updated to sky-blue tones`;
 
 async function run() {
   try {
