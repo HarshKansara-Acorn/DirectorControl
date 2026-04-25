@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 576" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Main background gradient: light sky-blue left to deeper sky-blue right -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#7dd3fc"/>
+      <stop offset="40%"  stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+
+    <!-- Padlock body: frosted glass effect -->
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.35"/>
+    </linearGradient>
+
+    <!-- Shackle gradient -->
+    <linearGradient id="shackleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#e0f2fe" stop-opacity="0.55"/>
+    </linearGradient>
+
+    <!-- Keyhole dot gradient -->
+    <radialGradient id="keyGrad" cx="50%" cy="35%" r="60%">
+      <stop offset="0%"   stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </radialGradient>
+
+    <!-- Blur filter for frosted glass -->
+    <filter id="blur" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="576" fill="url(#bgGrad)"/>
+
+  <!-- Outer dashed circle -->
+  <circle cx="620" cy="288" r="310"
+    fill="none"
+    stroke="white" stroke-opacity="0.35"
+    stroke-width="2"
+    stroke-dasharray="18 12"/>
+
+  <!-- Inner solid circle -->
+  <circle cx="620" cy="288" r="210"
+    fill="none"
+    stroke="white" stroke-opacity="0.45"
+    stroke-width="2.5"/>
+
+  <!-- ── Padlock ── -->
+  <!-- Shackle (the U-shaped arch) — drawn as a thick arc -->
+  <!-- Using a path: semicircle from bottom-left to bottom-right, open at bottom -->
+  <path d="M 530 295
+             A 90 90 0 0 1 710 295"
+    fill="none"
+    stroke="url(#shackleGrad)"
+    stroke-width="68"
+    stroke-linecap="round"/>
+
+  <!-- Shackle inner cutout to make it hollow -->
+  <path d="M 556 295
+             A 64 64 0 0 1 684 295"
+    fill="none"
+    stroke="url(#bgGrad)"
+    stroke-width="28"
+    stroke-linecap="round"
+    opacity="0.55"/>
+
+  <!-- Padlock body (rounded rectangle) -->
+  <rect x="490" y="295" width="260" height="210" rx="28" ry="28"
+    fill="url(#bodyGrad)"/>
+
+  <!-- Subtle inner highlight on body top edge -->
+  <rect x="490" y="295" width="260" height="6" rx="3"
+    fill="white" fill-opacity="0.3"/>
+
+  <!-- Keyhole — circle -->
+  <circle cx="620" cy="385" r="22"
+    fill="url(#keyGrad)"/>
+
+  <!-- Keyhole — stem -->
+  <rect x="612" y="400" width="16" height="30" rx="7"
+    fill="url(#keyGrad)"/>
+</svg>

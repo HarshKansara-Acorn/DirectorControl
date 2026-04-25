@@ -6,36 +6,30 @@
   position: relative;
   overflow: hidden;
 
-  /* Base gradient matching the image: near-white left → light blue → teal-blue right */
-  background:
-    linear-gradient(135deg,
-      #e8f4fd 0%,
-      #dbeafe 25%,
-      #bfdbfe 55%,
-      #7dd3fc 80%,
-      #38bdf8 100%
-    );
+  /* Fallback gradient while image loads */
+  background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0ea5e9 100%);
 }
 
-/* ── Network / binary background pattern (SVG inline) ── */
+/* ── Actual background image ── */
 .container::before {
   content: '';
   position: absolute; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='500' viewBox='0 0 900 500'%3E%3Cdefs%3E%3Cstyle%3E.n%7Bfill:none;stroke:%23ffffff;stroke-opacity:0.45;%7D.d%7Bfill:%23ffffff;fill-opacity:0.18;font-size:10px;font-family:monospace;%7D.c%7Bfill:%23ffffff;fill-opacity:0.55;%7D%3C/style%3E%3C/defs%3E%3C!-- network lines --%3E%3Cline class='n' x1='80' y1='320' x2='220' y2='180'/%3E%3Cline class='n' x1='220' y1='180' x2='380' y2='240'/%3E%3Cline class='n' x1='380' y1='240' x2='520' y2='130'/%3E%3Cline class='n' x1='520' y1='130' x2='660' y2='200'/%3E%3Cline class='n' x1='220' y1='180' x2='300' y2='80'/%3E%3Cline class='n' x1='380' y1='240' x2='300' y2='80'/%3E%3Cline class='n' x1='80' y1='320' x2='160' y2='420'/%3E%3Cline class='n' x1='160' y1='420' x2='380' y2='380'/%3E%3Cline class='n' x1='380' y1='380' x2='380' y2='240'/%3E%3Cline class='n' x1='380' y1='380' x2='520' y2='400'/%3E%3Cline class='n' x1='520' y1='130' x2='520' y2='400'/%3E%3C!-- nodes --%3E%3Ccircle class='c' cx='80' cy='320' r='6'/%3E%3Ccircle class='c' cx='220' cy='180' r='8'/%3E%3Ccircle class='c' cx='300' cy='80' r='5'/%3E%3Ccircle class='c' cx='380' cy='240' r='9'/%3E%3Ccircle class='c' cx='520' cy='130' r='6'/%3E%3Ccircle class='c' cx='660' cy='200' r='5'/%3E%3Ccircle class='c' cx='160' cy='420' r='5'/%3E%3Ccircle class='c' cx='380' cy='380' r='7'/%3E%3Ccircle class='c' cx='520' cy='400' r='5'/%3E%3C!-- binary text --%3E%3Ctext class='d' x='30' y='360'%3E1001 0110%3C/text%3E%3Ctext class='d' x='30' y='400'%3E0000 1110%3C/text%3E%3Ctext class='d' x='30' y='440'%3E0011 0100%3C/text%3E%3Ctext class='d' x='150' y='460'%3E0101 0110%3C/text%3E%3Ctext class='d' x='240' y='200'%3E1000 0011%3C/text%3E%3Ctext class='d' x='310' y='300'%3E0010 1101%3C/text%3E%3Ctext class='d' x='420' y='280'%3E1100 0100%3C/text%3E%3Ctext class='d' x='420' y='420'%3E1001 1001%3C/text%3E%3Ctext class='d' x='540' y='460'%3E1000 1111%3C/text%3E%3C!-- circular arc (right side) --%3E%3Ccircle class='n' cx='820' cy='280' r='180' stroke-dasharray='12 8'/%3E%3Ccircle class='n' cx='820' cy='280' r='130' stroke-dasharray='8 6'/%3E%3Ccircle class='n' cx='820' cy='280' r='80'/%3E%3C!-- padlock icon (right) --%3E%3Crect x='740' y='270' width='100' height='80' rx='10' fill='white' fill-opacity='0.7'/%3E%3Crect x='760' y='240' width='60' height='50' rx='30' fill='none' stroke='white' stroke-opacity='0.7' stroke-width='14'/%3E%3Ccircle cx='790' cy='310' r='10' fill='%2393c5fd' fill-opacity='0.9'/%3E%3Crect x='786' y='310' width='8' height='16' rx='3' fill='%2393c5fd' fill-opacity='0.9'/%3E%3C/svg%3E");
+  background-image: url('/login-bg.svg');
   background-size: cover;
-  background-position: center;
+  background-position: center center;
+  background-repeat: no-repeat;
   pointer-events: none;
   z-index: 0;
 }
 
-/* ── Subtle overlay to ensure card readability ── */
+/* ── Subtle darkening overlay so the card stays readable ── */
 .container::after {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(135deg,
-    rgba(255,255,255,0.15) 0%,
-    rgba(186,230,253,0.08) 50%,
-    rgba(14,165,233,0.1) 100%
+  background: linear-gradient(
+    135deg,
+    rgba(125,211,252,0.12) 0%,
+    rgba(14,165,233,0.08) 100%
   );
   pointer-events: none;
   z-index: 0;
@@ -43,17 +37,17 @@
 
 .card {
   position: relative; z-index: 1;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
   border-radius: 20px;
   padding: 36px 40px;
   width: 100%; max-width: 440px;
   box-shadow:
-    0 8px 32px rgba(14, 116, 144, 0.15),
-    0 2px 8px rgba(14, 116, 144, 0.08),
-    inset 0 1px 0 rgba(255,255,255,0.9);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+    0 8px 40px rgba(14, 116, 144, 0.18),
+    0 2px 8px rgba(14, 116, 144, 0.1),
+    inset 0 1px 0 rgba(255,255,255,0.95);
+  border: 1px solid rgba(255, 255, 255, 0.75);
 }
 
 /* ── Brand ── */

@@ -16,15 +16,15 @@ const git = simpleGit({
   maxConcurrentProcesses: 1,
 });
 
-const commitMessage = `style: login background with cybersecurity theme, sky-blue brand palette
+const commitMessage = `style: replace distorted SVG lock with clean vector recreation matching shared image
 
-- Login page: light blue gradient background matching the cybersecurity image
-  (white-left to sky-blue-right with network nodes, binary text, padlock SVG)
-- Frosted glass card with backdrop-filter blur on login page
-- All login form elements (inputs, buttons, tabs, labels) restyled to sky-blue palette
-- App-wide brand colour updated from deep blue (#1e40af) to sky blue (#0369a1)
-- Nav active states, logo icons, user avatars updated to match
-- Dark mode brand colours updated to sky-blue tones`;
+- Created frontend/public/login-bg.svg: precise SVG recreation of the shared image
+  - Sky-blue gradient background (#7dd3fc → #38bdf8 → #0ea5e9)
+  - Two concentric circles (outer dashed, inner solid) in white
+  - Frosted-glass padlock: rounded rect body, circular shackle, indigo keyhole dot
+  - Correct proportions and frosted glass effect matching the reference image
+- Login CSS now uses url('/login-bg.svg') as background-image instead of inline SVG
+- Frosted glass card with backdrop-filter blur(24px)`;
 
 async function run() {
   try {
