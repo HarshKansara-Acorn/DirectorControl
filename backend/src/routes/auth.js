@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const speakeasy = require('speakeasy');
 const QRCode  = require('qrcode');
 const router  = express.Router();
@@ -49,12 +50,6 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.Password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-    // Update last login timestamp
-    await execute(
-      'UPDATE DC_Users SET LastLoginAt=GETUTCDATE() WHERE Id=@id',
-      { id: { type: sql.NVarChar, value: user.Id } }
-    );
-
     const twoFAEnabled = user.TwoFAEnabled === true || user.TwoFAEnabled === 1;
 
     if (twoFAEnabled && user.TwoFASecret) {
@@ -68,10 +63,20 @@ router.post('/login', async (req, res) => {
     }
 
     // No 2FA — issue full session token
+    const jti   = uuidv4();
     const token = jwt.sign(
-      { id: user.Id, email: user.Email, role: user.Role, name: user.Name },
+      { id: user.Id, email: user.Email, role: user.Role, name: user.Name, jti },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
+    );
+
+    // Store the session token ID — invalidates any previous session for this user
+    await execute(
+      'UPDATE DC_Users SET SessionToken=@jti, LastLoginAt=GETUTCDATE() WHERE Id=@id',
+      {
+        jti: { type: sql.NVarChar, value: jti },
+        id:  { type: sql.NVarChar, value: user.Id },
+      }
     );
 
     res.json({ token, user: mapPublicUser(user) });
@@ -124,10 +129,20 @@ router.post('/login/2fa', async (req, res) => {
       return res.status(401).json({ message: 'Invalid or expired code. Please try again.' });
 
     // Issue full session token
+    const jti   = uuidv4();
     const token = jwt.sign(
-      { id: user.Id, email: user.Email, role: user.Role, name: user.Name },
+      { id: user.Id, email: user.Email, role: user.Role, name: user.Name, jti },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
+    );
+
+    // Store the session token ID — invalidates any previous session for this user
+    await execute(
+      'UPDATE DC_Users SET SessionToken=@jti, LastLoginAt=GETUTCDATE() WHERE Id=@id',
+      {
+        jti: { type: sql.NVarChar, value: jti },
+        id:  { type: sql.NVarChar, value: user.Id },
+      }
     );
 
     res.json({ token, user: mapPublicUser(user) });
@@ -454,8 +469,18 @@ router.get('/validate-reset-token/:token', async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/auth/logout
+// Clears the active session token so the JWT is immediately invalidated.
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/logout', (req, res) => {
+router.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    await execute(
+      'UPDATE DC_Users SET SessionToken=NULL WHERE Id=@id',
+      { id: { type: sql.NVarChar, value: req.user.id } }
+    );
+  } catch (err) {
+    // Non-fatal — client will clear its token regardless
+    console.error('Logout session clear error:', err.message);
+  }
   res.json({ message: 'Logged out successfully' });
 });
 

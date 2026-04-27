@@ -56,7 +56,13 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Tell the server to clear the session token (invalidates the JWT server-side)
+      await api.post('/auth/logout');
+    } catch {
+      // Ignore errors — we clear client state regardless
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     delete api.defaults.headers.common['Authorization'];
