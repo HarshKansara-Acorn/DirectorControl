@@ -16,7 +16,6 @@ import Documents from './pages/Documents';
 import Bills from './pages/Bills';
 import Assets from './pages/Assets';
 import Events from './pages/Events';
-import Teams from './pages/Teams';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import DirectorDashboard from './pages/director/DirectorDashboard';
@@ -54,7 +53,6 @@ function App() {
                 <Route path="bills" element={<Bills />} />
                 <Route path="assets" element={<Assets />} />
                 <Route path="events" element={<Events />} />
-                <Route path="teams" element={<Teams />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

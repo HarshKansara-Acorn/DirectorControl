@@ -6,7 +6,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import {
   LayoutDashboard, CheckSquare, Bell, Search,
   Settings, LogOut, ChevronDown, User,
-  Plane, FileText, Receipt, Package, Calendar, Users
+  Plane, FileText, Receipt, Package, Calendar
 } from 'lucide-react';
 import NotificationPanel from './NotificationPanel';
 import SearchPanel from './SearchPanel';
@@ -21,7 +21,6 @@ const navItems = [
   { path: '/bills', label: 'Bills', icon: Receipt },
   { path: '/assets', label: 'Assets', icon: Package },
   { path: '/events', label: 'Events', icon: Calendar },
-  { path: '/teams', label: 'Teams', icon: Users },
 ];
 
 const DashboardLayout = () => {
