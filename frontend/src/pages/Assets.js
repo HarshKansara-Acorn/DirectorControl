@@ -5,6 +5,7 @@ import api from '../services/api';
 import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
 import { Package, Edit2, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import FileUploadButton from '../components/common/FileUploadButton';
 import styles from './PageLayout.module.css';
 
 const STATUS_STYLES = {
@@ -179,6 +180,16 @@ const Assets = () => {
                   <div className={styles.cardActions}>
                     {item.status === 'active' && <button className={styles.editBtn} onClick={() => handleStatusChange(item.id, 'maintenance')}>⚙️ Maintenance</button>}
                     {item.status === 'maintenance' && <button className={styles.viewBtn} onClick={() => handleStatusChange(item.id, 'active')}>✓ Mark Active</button>}
+                    <FileUploadButton
+                      itemId={item.id}
+                      endpoint="/assets"
+                      hasFile={item.hasAttachment}
+                      fileName={item.attachmentName}
+                      fileData={item.attachmentData}
+                      fileType={item.attachmentType}
+                      onSuccess={fetchAssets}
+                      label="Attach Doc"
+                    />
                     <button className={styles.editBtn} onClick={() => openEdit(item)}><Edit2 size={13} /> Edit</button>
                     <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}><Trash2 size={13} /> Delete</button>
                   </div>

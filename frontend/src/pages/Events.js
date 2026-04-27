@@ -6,6 +6,7 @@ import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
 import { Calendar, MapPin, Users, Clock, Edit2, Trash2, Plus } from 'lucide-react';
 import DirectorSelector from '../components/modals/DirectorSelector';
+import FileUploadButton from '../components/common/FileUploadButton';
 import styles from './PageLayout.module.css';
 
 const TYPE_STYLES = {
@@ -181,6 +182,16 @@ const Events = () => {
                       {/* Actions */}
                       {isAdmin && (
                         <div className={styles.eventCardActions}>
+                          <FileUploadButton
+                            itemId={item.id}
+                            endpoint="/events"
+                            hasFile={item.hasAttachment}
+                            fileName={item.attachmentName}
+                            fileData={item.attachmentData}
+                            fileType={item.attachmentType}
+                            onSuccess={fetchEvents}
+                            label="Attach"
+                          />
                           <button className={styles.iconEditBtn} onClick={() => openEdit(item)} title="Edit"><Edit2 size={13} /></button>
                           <button className={styles.iconDeleteBtn} onClick={() => handleDelete(item.id)} title="Delete"><Trash2 size={13} /></button>
                         </div>

@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { query, queryOne, execute, sql } = require('../config/db');
+const { query, queryOne, execute, getPool, sql } = require('../config/db');
+const { validateFile, formatFileSize } = require('../utils/fileUpload');
 
 const mapEvent = (r) => {
   let directorIds = [];
@@ -20,6 +21,10 @@ const mapEvent = (r) => {
     isAllDay: r.IsAllDay === true || r.IsAllDay === 1,
     priority: r.Priority, status: r.Status, notes: r.Notes,
     teamsId: r.TeamsId, joinUrl: r.JoinUrl, source: r.Source,
+    attachmentData: r.AttachmentData || null,
+    attachmentName: r.AttachmentName || null,
+    attachmentType: r.AttachmentType || null,
+    hasAttachment: !!r.AttachmentData,
     createdBy: r.CreatedBy, createdAt: r.CreatedAt,
   };
 };
@@ -160,6 +165,46 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     res.json({ message: 'Event deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete event' });
+  }
+});
+
+// ── POST /api/events/:id/upload — attach agenda/minutes ──────────────────────
+router.post('/:id/upload', authenticateToken, requireAdmin, async (req, res) => {
+  const { fileData, fileName } = req.body;
+
+  const validation = validateFile(fileData);
+  if (!validation.valid) return res.status(400).json({ message: validation.error });
+
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('id',       sql.NVarChar(36),      req.params.id)
+      .input('fileData', sql.NVarChar(sql.MAX), fileData)
+      .input('fileName', sql.NVarChar(300),     fileName || `document.${validation.ext}`)
+      .input('fileType', sql.NVarChar(50),      validation.ext)
+      .query(`UPDATE DC_Events SET
+        AttachmentData=@fileData, AttachmentName=@fileName, AttachmentType=@fileType
+        WHERE Id=@id`);
+
+    const rows = await query('SELECT * FROM DC_Events WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    if (!rows[0]) return res.status(404).json({ message: 'Event not found' });
+    res.json(mapEvent(rows[0]));
+  } catch (err) {
+    console.error('Event upload error:', err.message);
+    res.status(500).json({ message: 'Failed to upload file' });
+  }
+});
+
+// ── DELETE /api/events/:id/upload — remove attachment ────────────────────────
+router.delete('/:id/upload', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    await execute(
+      `UPDATE DC_Events SET AttachmentData=NULL, AttachmentName=NULL, AttachmentType=NULL WHERE Id=@id`,
+      { id: { type: sql.NVarChar, value: req.params.id } }
+    );
+    res.json({ message: 'Attachment removed' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to remove attachment' });
   }
 });
 

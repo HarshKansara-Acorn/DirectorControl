@@ -2,12 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { query, queryOne, execute, sql } = require('../config/db');
+const { query, queryOne, execute, getPool, sql } = require('../config/db');
+const { validateFile, formatFileSize } = require('../utils/fileUpload');
 
 const mapDoc = (r) => ({
   id: r.Id, title: r.Title, description: r.Description,
   category: r.Category, directorId: r.DirectorId,
   fileUrl: r.FileUrl, fileName: r.FileName, fileSize: r.FileSize, fileType: r.FileType,
+  fileData: r.FileData || null,   // base64 content
+  hasFile: !!r.FileData,
   status: r.Status,
   expiryDate: r.ExpiryDate ? r.ExpiryDate.toISOString().split('T')[0] : null,
   expiryTime: r.ExpiryTime || null,
@@ -94,6 +97,48 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     res.json({ message: 'Document deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete document' });
+  }
+});
+
+// ── POST /api/documents/:id/upload — attach a file to an existing document ───
+router.post('/:id/upload', authenticateToken, requireAdmin, async (req, res) => {
+  const { fileData, fileName } = req.body;
+
+  const validation = validateFile(fileData);
+  if (!validation.valid) return res.status(400).json({ message: validation.error });
+
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('id',       sql.NVarChar(36),       req.params.id)
+      .input('fileData', sql.NVarChar(sql.MAX),   fileData)
+      .input('fileName', sql.NVarChar(300),        fileName || `file.${validation.ext}`)
+      .input('fileSize', sql.NVarChar(50),         formatFileSize(validation.sizeBytes))
+      .input('fileType', sql.NVarChar(20),         validation.ext)
+      .query(`UPDATE DC_Documents SET
+        FileData=@fileData, FileName=@fileName,
+        FileSize=@fileSize, FileType=@fileType
+        WHERE Id=@id`);
+
+    const rows = await query('SELECT * FROM DC_Documents WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    if (!rows[0]) return res.status(404).json({ message: 'Document not found' });
+    res.json(mapDoc(rows[0]));
+  } catch (err) {
+    console.error('Document upload error:', err.message);
+    res.status(500).json({ message: 'Failed to upload file' });
+  }
+});
+
+// ── DELETE /api/documents/:id/upload — remove attached file ──────────────────
+router.delete('/:id/upload', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    await execute(
+      `UPDATE DC_Documents SET FileData=NULL, FileName='', FileSize='', FileType='pdf' WHERE Id=@id`,
+      { id: { type: sql.NVarChar, value: req.params.id } }
+    );
+    res.json({ message: 'File removed' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to remove file' });
   }
 });
 

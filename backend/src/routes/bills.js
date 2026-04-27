@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { query, queryOne, execute, sql } = require('../config/db');
+const { query, queryOne, execute, getPool, sql } = require('../config/db');
+const { validateFile, formatFileSize } = require('../utils/fileUpload');
 
 const mapBill = (r) => ({
   id: r.Id, title: r.Title, vendor: r.Vendor, category: r.Category,
@@ -11,6 +12,10 @@ const mapBill = (r) => ({
   dueTime: r.DueTime || null,
   status: r.Status, invoiceNumber: r.InvoiceNumber, notes: r.Notes,
   paidDate: r.PaidDate ? r.PaidDate.toISOString().split('T')[0] : null,
+  attachmentData: r.AttachmentData || null,
+  attachmentName: r.AttachmentName || null,
+  attachmentType: r.AttachmentType || null,
+  hasAttachment: !!r.AttachmentData,
   createdBy: r.CreatedBy, createdAt: r.CreatedAt,
 });
 
@@ -113,6 +118,46 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     res.json({ message: 'Bill deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete bill' });
+  }
+});
+
+// ── POST /api/bills/:id/upload — attach invoice/receipt ──────────────────────
+router.post('/:id/upload', authenticateToken, requireAdmin, async (req, res) => {
+  const { fileData, fileName } = req.body;
+
+  const validation = validateFile(fileData);
+  if (!validation.valid) return res.status(400).json({ message: validation.error });
+
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('id',       sql.NVarChar(36),      req.params.id)
+      .input('fileData', sql.NVarChar(sql.MAX), fileData)
+      .input('fileName', sql.NVarChar(300),     fileName || `invoice.${validation.ext}`)
+      .input('fileType', sql.NVarChar(50),      validation.ext)
+      .query(`UPDATE DC_Bills SET
+        AttachmentData=@fileData, AttachmentName=@fileName, AttachmentType=@fileType
+        WHERE Id=@id`);
+
+    const rows = await query('SELECT * FROM DC_Bills WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    if (!rows[0]) return res.status(404).json({ message: 'Bill not found' });
+    res.json(mapBill(rows[0]));
+  } catch (err) {
+    console.error('Bill upload error:', err.message);
+    res.status(500).json({ message: 'Failed to upload file' });
+  }
+});
+
+// ── DELETE /api/bills/:id/upload — remove attachment ─────────────────────────
+router.delete('/:id/upload', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    await execute(
+      `UPDATE DC_Bills SET AttachmentData=NULL, AttachmentName=NULL, AttachmentType=NULL WHERE Id=@id`,
+      { id: { type: sql.NVarChar, value: req.params.id } }
+    );
+    res.json({ message: 'Attachment removed' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to remove attachment' });
   }
 });
 

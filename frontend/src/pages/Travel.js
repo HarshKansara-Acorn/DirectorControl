@@ -5,6 +5,7 @@ import api from '../services/api';
 import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
 import { Plane, MapPin, Calendar, Edit2, Trash2, Plus } from 'lucide-react';
+import FileUploadButton from '../components/common/FileUploadButton';
 import styles from './PageLayout.module.css';
 
 const STATUS_STYLES = {
@@ -145,6 +146,16 @@ const Travel = () => {
                 </div>
                 {isAdmin && (
                   <div className={styles.cardActions}>
+                    <FileUploadButton
+                      itemId={item.id}
+                      endpoint="/travel"
+                      hasFile={item.hasAttachment}
+                      fileName={item.attachmentName}
+                      fileData={item.attachmentData}
+                      fileType={item.attachmentType}
+                      onSuccess={fetchTravel}
+                      label="Attach Document"
+                    />
                     <button className={styles.editBtn} onClick={() => openEdit(item)}><Edit2 size={13} /> Edit</button>
                     <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}><Trash2 size={13} /> Delete</button>
                   </div>

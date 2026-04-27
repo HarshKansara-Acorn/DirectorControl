@@ -4,7 +4,8 @@ import { useDirector } from '../context/DirectorContext';
 import api from '../services/api';
 import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
-import { FileText, Download, Edit2, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import FileUploadButton from '../components/common/FileUploadButton';
+import { FileText, Edit2, Trash2, Plus, AlertTriangle } from 'lucide-react';
 import styles from './PageLayout.module.css';
 
 const FILE_ICONS = { pdf: '📄', docx: '📝', xlsx: '📊', pptx: '📋', default: '📁' };
@@ -130,7 +131,17 @@ const Documents = () => {
                   )}
                 </div>
                 <div className={styles.cardActions}>
-                  <button className={styles.viewBtn}><Download size={13} /> Download</button>
+                  <FileUploadButton
+                    itemId={item.id}
+                    endpoint="/documents"
+                    hasFile={item.hasFile}
+                    fileName={item.fileName}
+                    fileData={item.fileData}
+                    fileType={item.fileType}
+                    onSuccess={fetchDocuments}
+                    disabled={!isAdmin}
+                    label="Attach File"
+                  />
                   {isAdmin && <>
                     <button className={styles.editBtn} onClick={() => openEdit(item)}><Edit2 size={13} /> Edit</button>
                     <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}><Trash2 size={13} /> Delete</button>

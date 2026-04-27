@@ -5,6 +5,7 @@ import api from '../services/api';
 import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
 import { Receipt, Edit2, Trash2, Plus, CheckCircle } from 'lucide-react';
+import FileUploadButton from '../components/common/FileUploadButton';
 import styles from './PageLayout.module.css';
 
 const STATUS_STYLES = {
@@ -131,6 +132,7 @@ const Bills = () => {
                 <th>Due Date</th>
                 <th>Invoice #</th>
                 <th>Status</th>
+                <th>Receipt</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -150,6 +152,21 @@ const Bills = () => {
                     <td className={styles.tableCell}>{item.invoiceNumber || '—'}</td>
                     <td>
                       <span className={styles.statusBadge} style={{ background: s.bg, color: s.color }}>{s.label}</span>
+                    </td>
+                    <td>
+                      {isAdmin && (
+                        <FileUploadButton
+                          itemId={item.id}
+                          endpoint="/bills"
+                          hasFile={item.hasAttachment}
+                          fileName={item.attachmentName}
+                          fileData={item.attachmentData}
+                          fileType={item.attachmentType}
+                          onSuccess={fetchBills}
+                          label="Attach"
+                          accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        />
+                      )}
                     </td>
                     <td>
                       <div className={styles.tableActions}>
