@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Shield body -->
+  <path d="M16 2L4 7v9c0 6.5 5.1 12.6 12 14 6.9-1.4 12-7.5 12-14V7L16 2z" fill="#1e40af"/>
+  <!-- Subtle inner shield highlight -->
+  <path d="M16 5L7 9.2V16c0 4.8 3.8 9.3 9 10.7 5.2-1.4 9-5.9 9-10.7V9.2L16 5z" fill="#2563eb" opacity="0.5"/>
+  <!-- "DC" letters -->
+  <text x="16" y="20.5" font-family="Inter,Arial,sans-serif" font-size="10" font-weight="700"
+        fill="white" text-anchor="middle" letter-spacing="-0.5">DC</text>
+</svg>
