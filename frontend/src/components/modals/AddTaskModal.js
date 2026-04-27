@@ -7,7 +7,7 @@ import api from '../../services/api';
 const AddTaskModal = ({ directorId, onClose, onSuccess }) => {
   const [form, setForm] = useState({
     title: '', description: '', priority: 'medium',
-    status: 'todo', dueDate: '', tags: '',
+    status: 'todo', dueDate: '', dueTime: '', tags: '',
   });
   // Pre-select the currently viewed director
   const [selectedDirectors, setSelectedDirectors] = useState(directorId ? [directorId] : []);
@@ -78,8 +78,11 @@ const AddTaskModal = ({ directorId, onClose, onSuccess }) => {
             </Select>
           </FormField>
         </div>
-        <FormField label="Due Date">
-          <Input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
+        <FormField label="Due Date &amp; Time">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <Input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
+            <Input type="time" name="dueTime" value={form.dueTime} onChange={handleChange} />
+          </div>
         </FormField>
         <FormField label="Tags (comma separated)">
           <Input name="tags" value={form.tags} onChange={handleChange} placeholder="Finance, HR, Legal" />

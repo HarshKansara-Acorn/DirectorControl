@@ -16,7 +16,7 @@ const STATUS_STYLES = {
 
 const CATEGORY_ICONS = { Electronics: '💻', Furniture: '🪑', Vehicle: '🚗', Equipment: '⚙️', General: '📦' };
 
-const EMPTY_FORM = { name: '', description: '', category: 'Electronics', serialNumber: '', purchaseDate: '', purchaseValue: '', currency: '₹', location: '', warrantyExpiry: '', assignedTo: '' };
+const EMPTY_FORM = { name: '', description: '', category: 'Electronics', serialNumber: '', purchaseDate: '', purchaseTime: '', purchaseValue: '', currency: '₹', location: '', warrantyExpiry: '', assignedTo: '' };
 
 const Assets = () => {
   const { isAdmin } = useAuth();
@@ -46,7 +46,7 @@ const Assets = () => {
   const openAdd = () => { setEditItem(null); setForm(EMPTY_FORM); setError(''); setShowModal(true); };
   const openEdit = (item) => {
     setEditItem(item);
-    setForm({ name: item.name, description: item.description || '', category: item.category, serialNumber: item.serialNumber || '', purchaseDate: item.purchaseDate || '', purchaseValue: item.purchaseValue || '', currency: item.currency || '₹', location: item.location || '', warrantyExpiry: item.warrantyExpiry || '', assignedTo: item.assignedTo || '' });
+    setForm({ name: item.name, description: item.description || '', category: item.category, serialNumber: item.serialNumber || '', purchaseDate: item.purchaseDate || '', purchaseTime: item.purchaseTime || '', purchaseValue: item.purchaseValue || '', currency: item.currency || '₹', location: item.location || '', warrantyExpiry: item.warrantyExpiry || '', assignedTo: item.assignedTo || '' });
     setError(''); setShowModal(true);
   };
 
@@ -223,6 +223,11 @@ const Assets = () => {
               <FormField label="Purchase Date">
                 <Input type="date" value={form.purchaseDate} onChange={e => setForm(f => ({ ...f, purchaseDate: e.target.value }))} />
               </FormField>
+              <FormField label="Purchase Time">
+                <Input type="time" value={form.purchaseTime} onChange={e => setForm(f => ({ ...f, purchaseTime: e.target.value }))} />
+              </FormField>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <FormField label="Warranty Expiry">
                 <Input type="date" value={form.warrantyExpiry} onChange={e => setForm(f => ({ ...f, warrantyExpiry: e.target.value }))} />
               </FormField>

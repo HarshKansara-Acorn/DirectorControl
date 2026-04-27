@@ -59,11 +59,12 @@ const TaskDetailModal = ({ task, onClose, onUpdate }) => {
         {/* Meta */}
         <div className={styles.metaGrid}>
           <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Due Date</span>
+            <span className={styles.metaLabel}>Due Date &amp; Time</span>
             <span className={styles.metaValue}>
               {task.dueDate
                 ? new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
                 : 'No due date'}
+              {task.dueTime ? ` at ${task.dueTime}` : ''}
             </span>
           </div>
           <div className={styles.metaItem}>

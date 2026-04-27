@@ -14,7 +14,7 @@ const STATUS_STYLES = {
   cancelled: { bg: '#fef2f2', color: '#dc2626', label: 'Cancelled' },
 };
 
-const EMPTY_FORM = { destination: '', purpose: '', departureDate: '', returnDate: '', status: 'upcoming', notes: '' };
+const EMPTY_FORM = { destination: '', purpose: '', departureDate: '', departureTime: '', returnDate: '', returnTime: '', status: 'upcoming', notes: '' };
 
 const Travel = () => {
   const { isAdmin } = useAuth();
@@ -44,7 +44,7 @@ const Travel = () => {
   useEffect(() => { fetchTravel(); }, [fetchTravel]);
 
   const openAdd = () => { setEditItem(null); setForm(EMPTY_FORM); setError(''); setShowModal(true); };
-  const openEdit = (item) => { setEditItem(item); setForm({ destination: item.destination, purpose: item.purpose || '', departureDate: item.departureDate, returnDate: item.returnDate || '', status: item.status, notes: item.notes || '' }); setError(''); setShowModal(true); };
+  const openEdit = (item) => { setEditItem(item); setForm({ destination: item.destination, purpose: item.purpose || '', departureDate: item.departureDate, departureTime: item.departureTime || '', returnDate: item.returnDate || '', returnTime: item.returnTime || '', status: item.status, notes: item.notes || '' }); setError(''); setShowModal(true); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -131,7 +131,10 @@ const Travel = () => {
                 <div className={styles.cardBody}>
                   <div className={styles.metaRow}>
                     <Calendar size={13} color="#94a3b8" />
-                    <span>{formatDate(item.departureDate)}{item.returnDate ? ` → ${formatDate(item.returnDate)}` : ''}</span>
+                    <span>
+                      {formatDate(item.departureDate)}{item.departureTime ? ` ${item.departureTime}` : ''}
+                      {item.returnDate ? ` → ${formatDate(item.returnDate)}${item.returnTime ? ` ${item.returnTime}` : ''}` : ''}
+                    </span>
                   </div>
                   {item.notes && (
                     <div className={styles.metaRow}>
@@ -166,8 +169,16 @@ const Travel = () => {
               <FormField label="Departure Date" required>
                 <Input type="date" value={form.departureDate} onChange={e => setForm(f => ({ ...f, departureDate: e.target.value }))} required />
               </FormField>
+              <FormField label="Departure Time">
+                <Input type="time" value={form.departureTime} onChange={e => setForm(f => ({ ...f, departureTime: e.target.value }))} />
+              </FormField>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <FormField label="Return Date">
                 <Input type="date" value={form.returnDate} onChange={e => setForm(f => ({ ...f, returnDate: e.target.value }))} />
+              </FormField>
+              <FormField label="Return Time">
+                <Input type="time" value={form.returnTime} onChange={e => setForm(f => ({ ...f, returnTime: e.target.value }))} />
               </FormField>
             </div>
             <FormField label="Status">

@@ -17,7 +17,7 @@ const CATEGORY_COLORS = {
   General: { bg: '#f8fafc', color: '#64748b' },
 };
 
-const EMPTY_FORM = { title: '', description: '', category: 'General', fileName: '', fileSize: '', fileType: 'pdf', expiryDate: '', tags: '' };
+const EMPTY_FORM = { title: '', description: '', category: 'General', fileName: '', fileSize: '', fileType: 'pdf', expiryDate: '', expiryTime: '', tags: '' };
 
 const Documents = () => {
   const { isAdmin } = useAuth();
@@ -46,7 +46,7 @@ const Documents = () => {
   const openAdd = () => { setEditItem(null); setForm(EMPTY_FORM); setError(''); setShowModal(true); };
   const openEdit = (item) => {
     setEditItem(item);
-    setForm({ title: item.title, description: item.description || '', category: item.category, fileName: item.fileName || '', fileSize: item.fileSize || '', fileType: item.fileType || 'pdf', expiryDate: item.expiryDate || '', tags: (item.tags || []).join(', ') });
+    setForm({ title: item.title, description: item.description || '', category: item.category, fileName: item.fileName || '', fileSize: item.fileSize || '', fileType: item.fileType || 'pdf', expiryDate: item.expiryDate || '', expiryTime: item.expiryTime || '', tags: (item.tags || []).join(', ') });
     setError(''); setShowModal(true);
   };
 
@@ -171,9 +171,14 @@ const Documents = () => {
                 <Input value={form.fileSize} onChange={e => setForm(f => ({ ...f, fileSize: e.target.value }))} placeholder="e.g. 2.4 MB" />
               </FormField>
             </div>
-            <FormField label="Expiry Date">
-              <Input type="date" value={form.expiryDate} onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))} />
-            </FormField>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <FormField label="Expiry Date">
+                <Input type="date" value={form.expiryDate} onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))} />
+              </FormField>
+              <FormField label="Expiry Time">
+                <Input type="time" value={form.expiryTime} onChange={e => setForm(f => ({ ...f, expiryTime: e.target.value }))} />
+              </FormField>
+            </div>
             <FormField label="Tags (comma separated)">
               <Input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="Finance, Legal, Board" />
             </FormField>

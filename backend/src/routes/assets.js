@@ -9,6 +9,7 @@ const mapAsset = (r) => ({
   category: r.Category, directorId: r.DirectorId,
   serialNumber: r.SerialNumber,
   purchaseDate: r.PurchaseDate ? r.PurchaseDate.toISOString().split('T')[0] : null,
+  purchaseTime: r.PurchaseTime || null,
   purchaseValue: parseFloat(r.PurchaseValue || 0),
   currentValue: parseFloat(r.CurrentValue || 0),
   currency: r.Currency, status: r.Status, location: r.Location,
@@ -34,14 +35,14 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  const { name, description, category, directorId, serialNumber, purchaseDate, purchaseValue, currency, location, warrantyExpiry, assignedTo } = req.body;
+  const { name, description, category, directorId, serialNumber, purchaseDate, purchaseTime, purchaseValue, currency, location, warrantyExpiry, assignedTo } = req.body;
   if (!name || !directorId) return res.status(400).json({ message: 'Name and directorId are required' });
   try {
     const id = uuidv4();
     const pv = purchaseValue ? Number(purchaseValue) : 0;
     await execute(
-      `INSERT INTO DC_Assets (Id,Name,Description,Category,DirectorId,SerialNumber,PurchaseDate,PurchaseValue,CurrentValue,Currency,Status,Location,WarrantyExpiry,AssignedTo,CreatedBy)
-       VALUES (@id,@name,@desc,@category,@directorId,@serial,@purchaseDate,@pv,@pv,@currency,'active',@location,@warrantyExpiry,@assignedTo,@createdBy)`,
+      `INSERT INTO DC_Assets (Id,Name,Description,Category,DirectorId,SerialNumber,PurchaseDate,PurchaseTime,PurchaseValue,CurrentValue,Currency,Status,Location,WarrantyExpiry,AssignedTo,CreatedBy)
+       VALUES (@id,@name,@desc,@category,@directorId,@serial,@purchaseDate,@purchaseTime,@pv,@pv,@currency,'active',@location,@warrantyExpiry,@assignedTo,@createdBy)`,
       {
         id: { type: sql.NVarChar, value: id },
         name: { type: sql.NVarChar, value: name },
@@ -50,6 +51,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         directorId: { type: sql.NVarChar, value: directorId },
         serial: { type: sql.NVarChar, value: serialNumber || '' },
         purchaseDate: { type: sql.Date, value: purchaseDate ? new Date(purchaseDate) : null },
+        purchaseTime: { type: sql.NVarChar, value: purchaseTime || null },
         pv: { type: sql.Float, value: pv },
         currency: { type: sql.NVarChar, value: currency || '₹' },
         location: { type: sql.NVarChar, value: location || '' },
@@ -82,10 +84,10 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req, res) =>
 });
 
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
-  const { name, description, category, serialNumber, purchaseDate, purchaseValue, currentValue, currency, location, warrantyExpiry, assignedTo } = req.body;
+  const { name, description, category, serialNumber, purchaseDate, purchaseTime, purchaseValue, currentValue, currency, location, warrantyExpiry, assignedTo } = req.body;
   try {
     await execute(
-      'UPDATE DC_Assets SET Name=@name,Description=@desc,Category=@category,SerialNumber=@serial,PurchaseDate=@purchaseDate,PurchaseValue=@pv,CurrentValue=@cv,Currency=@currency,Location=@location,WarrantyExpiry=@warrantyExpiry,AssignedTo=@assignedTo WHERE Id=@id',
+      'UPDATE DC_Assets SET Name=@name,Description=@desc,Category=@category,SerialNumber=@serial,PurchaseDate=@purchaseDate,PurchaseTime=@purchaseTime,PurchaseValue=@pv,CurrentValue=@cv,Currency=@currency,Location=@location,WarrantyExpiry=@warrantyExpiry,AssignedTo=@assignedTo WHERE Id=@id',
       {
         id: { type: sql.NVarChar, value: req.params.id },
         name: { type: sql.NVarChar, value: name },
@@ -93,6 +95,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         category: { type: sql.NVarChar, value: category || 'General' },
         serial: { type: sql.NVarChar, value: serialNumber || '' },
         purchaseDate: { type: sql.Date, value: purchaseDate ? new Date(purchaseDate) : null },
+        purchaseTime: { type: sql.NVarChar, value: purchaseTime || null },
         pv: { type: sql.Float, value: purchaseValue ? Number(purchaseValue) : 0 },
         cv: { type: sql.Float, value: currentValue ? Number(currentValue) : (purchaseValue ? Number(purchaseValue) : 0) },
         currency: { type: sql.NVarChar, value: currency || '₹' },

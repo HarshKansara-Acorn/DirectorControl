@@ -5,7 +5,7 @@ import DirectorSelector from './DirectorSelector';
 import api from '../../services/api';
 
 const AddReminderModal = ({ directorId, onClose, onSuccess }) => {
-  const [form, setForm] = useState({ title: '', description: '', dueDate: '', priority: 'medium' });
+  const [form, setForm] = useState({ title: '', description: '', dueDate: '', dueTime: '', priority: 'medium' });
   const [selectedDirectors, setSelectedDirectors] = useState(directorId ? [directorId] : []);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -49,9 +49,12 @@ const AddReminderModal = ({ directorId, onClose, onSuccess }) => {
         <FormField label="Description">
           <Textarea name="description" value={form.description} onChange={handleChange} placeholder="Details..." />
         </FormField>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
           <FormField label="Due Date">
             <Input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
+          </FormField>
+          <FormField label="Due Time">
+            <Input type="time" name="dueTime" value={form.dueTime} onChange={handleChange} />
           </FormField>
           <FormField label="Priority">
             <Select name="priority" value={form.priority} onChange={handleChange}>

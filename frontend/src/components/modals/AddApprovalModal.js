@@ -7,7 +7,7 @@ import api from '../../services/api';
 const AddApprovalModal = ({ directorId, onClose, onSuccess }) => {
   const [form, setForm] = useState({
     type: 'leave', title: '', description: '',
-    fromName: '', fromEmail: '', priority: 'normal', dueDate: '',
+    fromName: '', fromEmail: '', priority: 'normal', dueDate: '', dueTime: '',
   });
   const [selectedDirectors, setSelectedDirectors] = useState(directorId ? [directorId] : []);
   const [loading, setLoading] = useState(false);
@@ -77,9 +77,14 @@ const AddApprovalModal = ({ directorId, onClose, onSuccess }) => {
             <Input type="email" name="fromEmail" value={form.fromEmail} onChange={handleChange} placeholder="email@company.com" />
           </FormField>
         </div>
-        <FormField label="Due Date">
-          <Input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
-        </FormField>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <FormField label="Due Date">
+            <Input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
+          </FormField>
+          <FormField label="Due Time">
+            <Input type="time" name="dueTime" value={form.dueTime} onChange={handleChange} />
+          </FormField>
+        </div>
 
         {error  && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
         {result && <p style={{ color: '#15803d', fontSize: 13, marginBottom: 12 }}>✅ {result}</p>}

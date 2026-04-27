@@ -14,7 +14,7 @@ const STATUS_STYLES = {
   cancelled: { bg: '#f8fafc', color: '#64748b', label: 'Cancelled' },
 };
 
-const EMPTY_FORM = { title: '', vendor: '', category: 'General', amount: '', currency: '₹', dueDate: '', invoiceNumber: '', notes: '' };
+const EMPTY_FORM = { title: '', vendor: '', category: 'General', amount: '', currency: '₹', dueDate: '', dueTime: '', invoiceNumber: '', notes: '' };
 
 const Bills = () => {
   const { isAdmin } = useAuth();
@@ -43,7 +43,7 @@ const Bills = () => {
   const openAdd = () => { setEditItem(null); setForm(EMPTY_FORM); setError(''); setShowModal(true); };
   const openEdit = (item) => {
     setEditItem(item);
-    setForm({ title: item.title, vendor: item.vendor || '', category: item.category, amount: item.amount, currency: item.currency || '₹', dueDate: item.dueDate || '', invoiceNumber: item.invoiceNumber || '', notes: item.notes || '' });
+    setForm({ title: item.title, vendor: item.vendor || '', category: item.category, amount: item.amount, currency: item.currency || '₹', dueDate: item.dueDate || '', dueTime: item.dueTime || '', invoiceNumber: item.invoiceNumber || '', notes: item.notes || '' });
     setError(''); setShowModal(true);
   };
 
@@ -146,7 +146,7 @@ const Bills = () => {
                     <td className={styles.tableCell}>{item.vendor || '—'}</td>
                     <td className={styles.tableCell}>{item.category}</td>
                     <td className={styles.tableCell} style={{ fontWeight: 600, color: '#1e293b' }}>{formatAmount(item.amount, item.currency)}</td>
-                    <td className={styles.tableCell}>{item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td>
+                    <td className={styles.tableCell}>{item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + (item.dueTime ? ` ${item.dueTime}` : '') : '—'}</td>
                     <td className={styles.tableCell}>{item.invoiceNumber || '—'}</td>
                     <td>
                       <span className={styles.statusBadge} style={{ background: s.bg, color: s.color }}>{s.label}</span>
@@ -205,6 +205,11 @@ const Bills = () => {
               <FormField label="Due Date">
                 <Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
               </FormField>
+              <FormField label="Due Time">
+                <Input type="time" value={form.dueTime} onChange={e => setForm(f => ({ ...f, dueTime: e.target.value }))} />
+              </FormField>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <FormField label="Invoice Number">
                 <Input value={form.invoiceNumber} onChange={e => setForm(f => ({ ...f, invoiceNumber: e.target.value }))} placeholder="INV-2026-001" />
               </FormField>

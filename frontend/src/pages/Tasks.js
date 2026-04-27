@@ -198,6 +198,7 @@ const Tasks = () => {
                                     {task.dueDate && (
                                       <span className={styles.dueDate}>
                                         📅 {new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                        {task.dueTime ? ` ${task.dueTime}` : ''}
                                       </span>
                                     )}
                                   </div>

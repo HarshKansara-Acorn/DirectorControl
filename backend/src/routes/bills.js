@@ -8,6 +8,7 @@ const mapBill = (r) => ({
   id: r.Id, title: r.Title, vendor: r.Vendor, category: r.Category,
   directorId: r.DirectorId, amount: parseFloat(r.Amount), currency: r.Currency,
   dueDate: r.DueDate ? r.DueDate.toISOString().split('T')[0] : null,
+  dueTime: r.DueTime || null,
   status: r.Status, invoiceNumber: r.InvoiceNumber, notes: r.Notes,
   paidDate: r.PaidDate ? r.PaidDate.toISOString().split('T')[0] : null,
   createdBy: r.CreatedBy, createdAt: r.CreatedAt,
@@ -30,13 +31,13 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  const { title, vendor, category, directorId, amount, currency, dueDate, invoiceNumber, notes } = req.body;
+  const { title, vendor, category, directorId, amount, currency, dueDate, dueTime, invoiceNumber, notes } = req.body;
   if (!title || !directorId || !amount) return res.status(400).json({ message: 'Title, directorId and amount are required' });
   try {
     const id = uuidv4();
     await execute(
-      `INSERT INTO DC_Bills (Id,Title,Vendor,Category,DirectorId,Amount,Currency,DueDate,Status,InvoiceNumber,Notes,CreatedBy)
-       VALUES (@id,@title,@vendor,@category,@directorId,@amount,@currency,@dueDate,'pending',@invoiceNumber,@notes,@createdBy)`,
+      `INSERT INTO DC_Bills (Id,Title,Vendor,Category,DirectorId,Amount,Currency,DueDate,DueTime,Status,InvoiceNumber,Notes,CreatedBy)
+       VALUES (@id,@title,@vendor,@category,@directorId,@amount,@currency,@dueDate,@dueTime,'pending',@invoiceNumber,@notes,@createdBy)`,
       {
         id: { type: sql.NVarChar, value: id },
         title: { type: sql.NVarChar, value: title },
@@ -46,6 +47,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         amount: { type: sql.Float, value: Number(amount) },
         currency: { type: sql.NVarChar, value: currency || '₹' },
         dueDate: { type: sql.Date, value: dueDate ? new Date(dueDate) : null },
+        dueTime: { type: sql.NVarChar, value: dueTime || null },
         invoiceNumber: { type: sql.NVarChar, value: invoiceNumber || '' },
         notes: { type: sql.NVarChar, value: notes || '' },
         createdBy: { type: sql.NVarChar, value: req.user.id },
@@ -80,10 +82,10 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 });
 
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
-  const { title, vendor, category, amount, currency, dueDate, invoiceNumber, notes } = req.body;
+  const { title, vendor, category, amount, currency, dueDate, dueTime, invoiceNumber, notes } = req.body;
   try {
     await execute(
-      'UPDATE DC_Bills SET Title=@title,Vendor=@vendor,Category=@category,Amount=@amount,Currency=@currency,DueDate=@dueDate,InvoiceNumber=@invoiceNumber,Notes=@notes WHERE Id=@id',
+      'UPDATE DC_Bills SET Title=@title,Vendor=@vendor,Category=@category,Amount=@amount,Currency=@currency,DueDate=@dueDate,DueTime=@dueTime,InvoiceNumber=@invoiceNumber,Notes=@notes WHERE Id=@id',
       {
         id: { type: sql.NVarChar, value: req.params.id },
         title: { type: sql.NVarChar, value: title },
@@ -92,6 +94,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         amount: { type: sql.Float, value: Number(amount) },
         currency: { type: sql.NVarChar, value: currency || '₹' },
         dueDate: { type: sql.Date, value: dueDate ? new Date(dueDate) : null },
+        dueTime: { type: sql.NVarChar, value: dueTime || null },
         invoiceNumber: { type: sql.NVarChar, value: invoiceNumber || '' },
         notes: { type: sql.NVarChar, value: notes || '' },
       }

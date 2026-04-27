@@ -9,6 +9,7 @@ const mapTask = (r) => ({
   priority: r.Priority, status: r.Status,
   assignedTo: r.AssignedTo, createdBy: r.CreatedBy,
   dueDate: r.DueDate ? r.DueDate.toISOString().split('T')[0] : null,
+  dueTime: r.DueTime || null,
   tags: r.Tags ? JSON.parse(r.Tags) : [],
   createdAt: r.CreatedAt,
 });
@@ -37,15 +38,15 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // POST /api/tasks
 router.post('/', authenticateToken, async (req, res) => {
-  const { title, description, priority, status, assignedTo, dueDate, tags } = req.body;
+  const { title, description, priority, status, assignedTo, dueDate, dueTime, tags } = req.body;
   if (!title || !assignedTo)
     return res.status(400).json({ message: 'Title and assignedTo are required' });
 
   try {
     const id = uuidv4();
     await execute(
-      `INSERT INTO DC_Tasks (Id,Title,Description,Priority,Status,AssignedTo,CreatedBy,DueDate,Tags)
-       VALUES (@id,@title,@desc,@priority,@status,@assignedTo,@createdBy,@dueDate,@tags)`,
+      `INSERT INTO DC_Tasks (Id,Title,Description,Priority,Status,AssignedTo,CreatedBy,DueDate,DueTime,Tags)
+       VALUES (@id,@title,@desc,@priority,@status,@assignedTo,@createdBy,@dueDate,@dueTime,@tags)`,
       {
         id:         { type: sql.NVarChar, value: id },
         title:      { type: sql.NVarChar, value: title },
@@ -55,6 +56,7 @@ router.post('/', authenticateToken, async (req, res) => {
         assignedTo: { type: sql.NVarChar, value: assignedTo },
         createdBy:  { type: sql.NVarChar, value: req.user.id },
         dueDate:    { type: sql.Date,     value: dueDate ? new Date(dueDate) : null },
+        dueTime:    { type: sql.NVarChar, value: dueTime || null },
         tags:       { type: sql.NVarChar, value: JSON.stringify(tags || []) },
       }
     );
@@ -68,7 +70,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
 // POST /api/tasks/broadcast — create the same task for multiple directors at once
 router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
-  const { title, description, priority, status, directorIds, dueDate, tags } = req.body;
+  const { title, description, priority, status, directorIds, dueDate, dueTime, tags } = req.body;
 
   if (!title || !directorIds?.length)
     return res.status(400).json({ message: 'Title and at least one directorId are required' });
@@ -78,8 +80,8 @@ router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
     for (const directorId of directorIds) {
       const id = uuidv4();
       await execute(
-        `INSERT INTO DC_Tasks (Id,Title,Description,Priority,Status,AssignedTo,CreatedBy,DueDate,Tags)
-         VALUES (@id,@title,@desc,@priority,@status,@assignedTo,@createdBy,@dueDate,@tags)`,
+        `INSERT INTO DC_Tasks (Id,Title,Description,Priority,Status,AssignedTo,CreatedBy,DueDate,DueTime,Tags)
+         VALUES (@id,@title,@desc,@priority,@status,@assignedTo,@createdBy,@dueDate,@dueTime,@tags)`,
         {
           id:         { type: sql.NVarChar, value: id },
           title:      { type: sql.NVarChar, value: title },
@@ -89,6 +91,7 @@ router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
           assignedTo: { type: sql.NVarChar, value: directorId },
           createdBy:  { type: sql.NVarChar, value: req.user.id },
           dueDate:    { type: sql.Date,     value: dueDate ? new Date(dueDate) : null },
+          dueTime:    { type: sql.NVarChar, value: dueTime || null },
           tags:       { type: sql.NVarChar, value: JSON.stringify(tags || []) },
         }
       );
@@ -107,11 +110,11 @@ router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
 
 // PUT /api/tasks/:id
 router.put('/:id', authenticateToken, async (req, res) => {
-  const { title, description, priority, status, dueDate, tags } = req.body;
+  const { title, description, priority, status, dueDate, dueTime, tags } = req.body;
   try {
     await execute(
       `UPDATE DC_Tasks SET Title=@title, Description=@desc, Priority=@priority,
-       Status=@status, DueDate=@dueDate, Tags=@tags, UpdatedAt=GETUTCDATE()
+       Status=@status, DueDate=@dueDate, DueTime=@dueTime, Tags=@tags, UpdatedAt=GETUTCDATE()
        WHERE Id=@id`,
       {
         id:       { type: sql.NVarChar, value: req.params.id },
@@ -120,6 +123,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         priority: { type: sql.NVarChar, value: priority || 'medium' },
         status:   { type: sql.NVarChar, value: status || 'todo' },
         dueDate:  { type: sql.Date,     value: dueDate ? new Date(dueDate) : null },
+        dueTime:  { type: sql.NVarChar, value: dueTime || null },
         tags:     { type: sql.NVarChar, value: JSON.stringify(tags || []) },
       }
     );

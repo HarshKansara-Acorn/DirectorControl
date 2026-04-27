@@ -4,7 +4,7 @@ import FormField, { Input, Textarea, FormActions } from './FormField';
 import api from '../../services/api';
 
 const AddTravelModal = ({ directorId, onClose, onSuccess }) => {
-  const [form, setForm] = useState({ destination: '', purpose: '', departureDate: '', returnDate: '', notes: '' });
+  const [form, setForm] = useState({ destination: '', purpose: '', departureDate: '', departureTime: '', returnDate: '', returnTime: '', notes: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,8 +36,16 @@ const AddTravelModal = ({ directorId, onClose, onSuccess }) => {
           <FormField label="Departure Date" required>
             <Input type="date" name="departureDate" value={form.departureDate} onChange={handleChange} required />
           </FormField>
+          <FormField label="Departure Time">
+            <Input type="time" name="departureTime" value={form.departureTime} onChange={handleChange} />
+          </FormField>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <FormField label="Return Date">
             <Input type="date" name="returnDate" value={form.returnDate} onChange={handleChange} />
+          </FormField>
+          <FormField label="Return Time">
+            <Input type="time" name="returnTime" value={form.returnTime} onChange={handleChange} />
           </FormField>
         </div>
         <FormField label="Notes">

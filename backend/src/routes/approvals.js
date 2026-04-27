@@ -9,6 +9,7 @@ const mapApproval = (r) => ({
   fromName: r.FromName, fromEmail: r.FromEmail, directorId: r.DirectorId,
   priority: r.Priority,
   dueDate: r.DueDate ? r.DueDate.toISOString().split('T')[0] : null,
+  dueTime: r.DueTime || null,
   status: r.Status, remarks: r.Remarks, actionBy: r.ActionBy,
   actionAt: r.ActionAt, createdBy: r.CreatedBy, createdAt: r.CreatedAt,
 });
@@ -30,13 +31,13 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  const { type, title, description, fromName, fromEmail, directorId, priority, dueDate } = req.body;
+  const { type, title, description, fromName, fromEmail, directorId, priority, dueDate, dueTime } = req.body;
   if (!title || !directorId) return res.status(400).json({ message: 'Title and directorId are required' });
   try {
     const id = uuidv4();
     await execute(
-      `INSERT INTO DC_Approvals (Id,Type,Title,Description,FromName,FromEmail,DirectorId,Priority,DueDate,Status,CreatedBy)
-       VALUES (@id,@type,@title,@desc,@fromName,@fromEmail,@directorId,@priority,@dueDate,'pending',@createdBy)`,
+      `INSERT INTO DC_Approvals (Id,Type,Title,Description,FromName,FromEmail,DirectorId,Priority,DueDate,DueTime,Status,CreatedBy)
+       VALUES (@id,@type,@title,@desc,@fromName,@fromEmail,@directorId,@priority,@dueDate,@dueTime,'pending',@createdBy)`,
       {
         id: { type: sql.NVarChar, value: id },
         type: { type: sql.NVarChar, value: type || 'general' },
@@ -47,6 +48,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         directorId: { type: sql.NVarChar, value: directorId },
         priority: { type: sql.NVarChar, value: priority || 'normal' },
         dueDate: { type: sql.Date, value: dueDate ? new Date(dueDate) : null },
+        dueTime: { type: sql.NVarChar, value: dueTime || null },
         createdBy: { type: sql.NVarChar, value: req.user.id },
       }
     );
@@ -60,7 +62,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 
 // POST /api/approvals/broadcast — send same approval request to multiple directors
 router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
-  const { type, title, description, fromName, fromEmail, directorIds, priority, dueDate } = req.body;
+  const { type, title, description, fromName, fromEmail, directorIds, priority, dueDate, dueTime } = req.body;
   if (!title || !directorIds?.length)
     return res.status(400).json({ message: 'Title and at least one directorId are required' });
 
@@ -69,8 +71,8 @@ router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
     for (const directorId of directorIds) {
       const id = uuidv4();
       await execute(
-        `INSERT INTO DC_Approvals (Id,Type,Title,Description,FromName,FromEmail,DirectorId,Priority,DueDate,Status,CreatedBy)
-         VALUES (@id,@type,@title,@desc,@fromName,@fromEmail,@directorId,@priority,@dueDate,'pending',@createdBy)`,
+        `INSERT INTO DC_Approvals (Id,Type,Title,Description,FromName,FromEmail,DirectorId,Priority,DueDate,DueTime,Status,CreatedBy)
+         VALUES (@id,@type,@title,@desc,@fromName,@fromEmail,@directorId,@priority,@dueDate,@dueTime,'pending',@createdBy)`,
         {
           id:         { type: sql.NVarChar, value: id },
           type:       { type: sql.NVarChar, value: type || 'general' },
@@ -81,6 +83,7 @@ router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
           directorId: { type: sql.NVarChar, value: directorId },
           priority:   { type: sql.NVarChar, value: priority || 'normal' },
           dueDate:    { type: sql.Date,     value: dueDate ? new Date(dueDate) : null },
+          dueTime:    { type: sql.NVarChar, value: dueTime || null },
           createdBy:  { type: sql.NVarChar, value: req.user.id },
         }
       );

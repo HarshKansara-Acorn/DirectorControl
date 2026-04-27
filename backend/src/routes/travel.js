@@ -8,7 +8,9 @@ const mapTravel = (r) => ({
   id: r.Id, destination: r.Destination, purpose: r.Purpose,
   directorId: r.DirectorId,
   departureDate: r.DepartureDate ? r.DepartureDate.toISOString().split('T')[0] : null,
+  departureTime: r.DepartureTime || null,
   returnDate: r.ReturnDate ? r.ReturnDate.toISOString().split('T')[0] : null,
+  returnTime: r.ReturnTime || null,
   status: r.Status, notes: r.Notes,
   createdBy: r.CreatedBy, createdAt: r.CreatedAt,
 });
@@ -30,19 +32,21 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  const { destination, purpose, directorId, departureDate, returnDate, notes } = req.body;
+  const { destination, purpose, directorId, departureDate, departureTime, returnDate, returnTime, notes } = req.body;
   if (!destination || !directorId || !departureDate) return res.status(400).json({ message: 'Destination, directorId and departureDate are required' });
   try {
     const id = uuidv4();
     await execute(
-      'INSERT INTO DC_Travel (Id,Destination,Purpose,DirectorId,DepartureDate,ReturnDate,Status,Notes,CreatedBy) VALUES (@id,@dest,@purpose,@directorId,@depDate,@retDate,@status,@notes,@createdBy)',
+      'INSERT INTO DC_Travel (Id,Destination,Purpose,DirectorId,DepartureDate,DepartureTime,ReturnDate,ReturnTime,Status,Notes,CreatedBy) VALUES (@id,@dest,@purpose,@directorId,@depDate,@depTime,@retDate,@retTime,@status,@notes,@createdBy)',
       {
         id: { type: sql.NVarChar, value: id },
         dest: { type: sql.NVarChar, value: destination },
         purpose: { type: sql.NVarChar, value: purpose || '' },
         directorId: { type: sql.NVarChar, value: directorId },
         depDate: { type: sql.Date, value: new Date(departureDate) },
+        depTime: { type: sql.NVarChar, value: departureTime || null },
         retDate: { type: sql.Date, value: returnDate ? new Date(returnDate) : null },
+        retTime: { type: sql.NVarChar, value: returnTime || null },
         status: { type: sql.NVarChar, value: 'upcoming' },
         notes: { type: sql.NVarChar, value: notes || '' },
         createdBy: { type: sql.NVarChar, value: req.user.id },
@@ -57,16 +61,18 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
-  const { destination, purpose, departureDate, returnDate, status, notes } = req.body;
+  const { destination, purpose, departureDate, departureTime, returnDate, returnTime, status, notes } = req.body;
   try {
     await execute(
-      'UPDATE DC_Travel SET Destination=@dest,Purpose=@purpose,DepartureDate=@depDate,ReturnDate=@retDate,Status=@status,Notes=@notes WHERE Id=@id',
+      'UPDATE DC_Travel SET Destination=@dest,Purpose=@purpose,DepartureDate=@depDate,DepartureTime=@depTime,ReturnDate=@retDate,ReturnTime=@retTime,Status=@status,Notes=@notes WHERE Id=@id',
       {
         id: { type: sql.NVarChar, value: req.params.id },
         dest: { type: sql.NVarChar, value: destination },
         purpose: { type: sql.NVarChar, value: purpose || '' },
         depDate: { type: sql.Date, value: new Date(departureDate) },
+        depTime: { type: sql.NVarChar, value: departureTime || null },
         retDate: { type: sql.Date, value: returnDate ? new Date(returnDate) : null },
+        retTime: { type: sql.NVarChar, value: returnTime || null },
         status: { type: sql.NVarChar, value: status || 'upcoming' },
         notes: { type: sql.NVarChar, value: notes || '' },
       }
