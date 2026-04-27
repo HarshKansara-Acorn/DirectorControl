@@ -7,8 +7,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
-app.use(express.json({ limit: '10mb' }));        // allow photo uploads (compressed base64)
+const allowedOrigins = [
+  'https://directorcontrol.astutehealthcare.co.uk',
+  'http://localhost:3000', // keep for local dev
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, health checks)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Global error handler for unhandled async errors

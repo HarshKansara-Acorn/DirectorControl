@@ -16,13 +16,11 @@ const git = simpleGit({
   maxConcurrentProcesses: 1,
 });
 
-const commitMessage = `style: use original Bg-DirectorControl.png as login background (unmodified)
+const commitMessage = `config: update all URLs from localhost to production domain
 
-- Copied Bg-DirectorControl.png to frontend/src/assets/login-bg.png unchanged
-- Removed hand-drawn SVG replacement
-- CSS now references the real image via url('../assets/login-bg.png')
-- Updated fallback gradient to match image palette (near-white to light blue)
-- Frosted glass card with backdrop-filter blur(18px)`;
+- frontend/.env: REACT_APP_API_URL → https://directorcontrol.astutehealthcare.co.uk/api
+- backend/.env: FRONTEND_URL and AZURE_REDIRECT_URI → production domain
+- backend/src/index.js: CORS updated to allow production origin + localhost for dev`;
 
 async function run() {
   try {
