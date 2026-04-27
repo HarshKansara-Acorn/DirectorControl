@@ -95,21 +95,22 @@ const Events = () => {
     if (!activeDirectorId) return;
     setSyncing(true); setSyncMsg('');
     try {
-      // Check if Outlook is connected for this director
+      // Check connection — backend now falls back to admin's own token automatically
       const statusRes = await api.get('/teams/status', { params: { userId: activeDirectorId } });
       if (!statusRes.data.connected) {
-        setSyncMsg('❌ Outlook not connected for this director. Go to Settings → Linked Accounts to connect.');
+        setSyncMsg('❌ No Outlook account connected. Go to Settings → Linked Accounts to connect your Outlook.');
         setSyncing(false);
         return;
       }
       const res = await api.post('/teams/sync', { directorId: activeDirectorId });
-      setSyncMsg(`✅ ${res.data.message}`);
+      const calendarUsed = res.data.calendarUsed ? ` (using ${res.data.calendarUsed})` : '';
+      setSyncMsg(`✅ ${res.data.message}${calendarUsed}`);
       fetchEvents();
     } catch (err) {
       setSyncMsg(`❌ ${err.response?.data?.message || 'Sync failed'}`);
     } finally {
       setSyncing(false);
-      setTimeout(() => setSyncMsg(''), 5000);
+      setTimeout(() => setSyncMsg(''), 6000);
     }
   };
 

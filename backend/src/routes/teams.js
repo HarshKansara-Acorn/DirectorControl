@@ -104,19 +104,30 @@ router.post('/auth/disconnect', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/teams/status?userId=xxx
- * Returns connection status for any user.
- * Falls back to directorId param for backwards compatibility.
+ * Returns connection status.
+ * For admin: checks the requested userId first, then falls back to the admin's own token.
  */
 router.get('/status', authenticateToken, async (req, res) => {
   const targetId = req.query.userId || req.query.directorId || req.user.id;
-  const connected = await teamsService.isConnected(targetId);
 
-  // Load from cache (populated by isConnected above)
-  const stored = teamsService.tokenStore[targetId];
+  // Check the target user's token
+  let connected = await teamsService.isConnected(targetId);
+  let stored = teamsService.tokenStore[targetId];
+
+  // If admin is checking and target has no token, check if the admin themselves has one
+  // (admin connected Outlook from their own Settings — their token can be used for syncing)
+  if (!connected && req.user.role === 'admin' && targetId !== req.user.id) {
+    const adminConnected = await teamsService.isConnected(req.user.id);
+    if (adminConnected) {
+      connected = true;
+      stored = teamsService.tokenStore[req.user.id];
+    }
+  }
 
   res.json({
     connected,
     msUserEmail: stored?.msUserEmail || null,
+    tokenUserId: stored ? (teamsService.tokenStore[targetId] ? targetId : req.user.id) : null,
     configured: !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_ID !== 'your_azure_app_client_id'),
   });
 });
@@ -222,27 +233,46 @@ router.get('/presence', authenticateToken, async (req, res) => {
 
 /**
  * POST /api/teams/sync
- * Sync Teams calendar events into DC_Events table.
- * Admin only — can sync for any director.
+ * Sync Outlook calendar events into DC_Events for a director.
+ * Admin only.
+ *
+ * Token resolution order:
+ *   1. Director's own Outlook token (if they connected themselves)
+ *   2. The requesting admin's Outlook token (admin connected from their Settings)
  */
 router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
   const { directorId } = req.body;
+  if (!directorId) return res.status(400).json({ message: 'directorId is required' });
 
-  if (!(await teamsService.isConnected(directorId))) {
-    return res.status(404).json({ message: 'Teams not connected for this director' });
+  // Resolve which token to use for fetching calendar data
+  let tokenUserId = null;
+
+  if (await teamsService.isConnected(directorId)) {
+    // Director has their own Outlook connected
+    tokenUserId = directorId;
+  } else if (await teamsService.isConnected(req.user.id)) {
+    // Admin has Outlook connected — use admin's calendar on behalf of the director
+    tokenUserId = req.user.id;
+  } else {
+    return res.status(404).json({
+      message: 'No Outlook account connected. Please connect Outlook from Settings → Linked Accounts first.',
+    });
   }
 
   try {
-    const calEvents = await teamsService.getCalendarEvents(directorId, 60);
+    const calEvents = await teamsService.getCalendarEvents(tokenUserId, 60);
 
     let added = 0;
     let skipped = 0;
 
     for (const te of calEvents) {
-      // Check if already synced by TeamsId
+      // Check if already synced by TeamsId for this director
       const existing = await query(
-        'SELECT Id FROM DC_Events WHERE TeamsId = @tid',
-        { tid: { type: sql.NVarChar, value: te.id } }
+        'SELECT Id FROM DC_Events WHERE TeamsId = @tid AND DirectorId = @did',
+        {
+          tid: { type: sql.NVarChar, value: te.id },
+          did: { type: sql.NVarChar, value: directorId },
+        }
       );
 
       if (existing.length > 0) { skipped++; continue; }
@@ -262,8 +292,8 @@ router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
           desc:   { type: sql.NVarChar, value: te.description || '' },
           type:   { type: sql.NVarChar, value: te.isOnlineMeeting ? 'online_meeting' : 'meeting' },
           did:    { type: sql.NVarChar, value: directorId },
-          sd:     { type: sql.Date,     value: te.startDate },
-          ed:     { type: sql.Date,     value: te.endDate || te.startDate },
+          sd:     { type: sql.Date,     value: new Date(te.startDate) },
+          ed:     { type: sql.Date,     value: new Date(te.endDate || te.startDate) },
           st:     { type: sql.NVarChar, value: te.startTime || '' },
           et:     { type: sql.NVarChar, value: te.endTime || '' },
           loc:    { type: sql.NVarChar, value: te.location || '' },
@@ -280,9 +310,13 @@ router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
       added++;
     }
 
-    res.json({ message: `Outlook sync complete. Added: ${added}, Skipped (already exists): ${skipped}` });
+    const calendarOwner = tokenUserId === directorId ? 'director\'s' : 'your connected';
+    res.json({
+      message: `Outlook sync complete. Added: ${added}, Skipped (already exists): ${skipped}`,
+      calendarUsed: teamsService.tokenStore[tokenUserId]?.msUserEmail || tokenUserId,
+    });
   } catch (err) {
-    console.error('Teams sync error:', err.message);
+    console.error('Outlook sync error:', err.message);
     res.status(500).json({ message: 'Sync failed', error: err.message });
   }
 });
