@@ -91,3 +91,26 @@
 }
 
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── Two-way task direction indicators ── */
+.taskDirection {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 6px; padding-top: 5px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dirFromDirector {
+  font-size: 10px; font-weight: 600;
+  color: #7c3aed; background: #faf5ff;
+  padding: 1px 6px; border-radius: 6px;
+}
+
+.dirFromPA {
+  font-size: 10px; font-weight: 600;
+  color: #1e40af; background: #eff6ff;
+  padding: 1px 6px; border-radius: 6px;
+}
+
+.commentCount {
+  font-size: 10px; color: var(--text-muted);
+}

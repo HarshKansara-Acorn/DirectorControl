@@ -1,62 +1,128 @@
-.detail { display: flex; flex-direction: column; gap: 16px; }
+.detail { display: flex; flex-direction: column; gap: 14px; }
 
+/* ── Header ── */
 .titleRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.taskTitle { font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+.titleGroup { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.taskTitle { font-size: 17px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+.directionBadge { display: inline-flex; }
+.directionText { font-size: 11px; color: var(--text-muted); font-weight: 500; }
 .priorityBadge { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; flex-shrink: 0; }
 
+/* ── Participants ── */
+.participantsRow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--bg-subtle);
+  border-radius: 10px; border: 1px solid var(--border-subtle);
+}
+.participant { display: flex; align-items: center; gap: 8px; }
+.participantInfo { display: flex; flex-direction: column; gap: 1px; }
+.participantLabel { font-size: 10px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; }
+.participantName { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.participantArrow { font-size: 16px; color: var(--text-muted); flex-shrink: 0; }
+.commentCountBadge {
+  margin-left: auto; padding: 4px 10px;
+  background: var(--bg-muted); border-radius: 20px;
+  font-size: 12px; color: var(--text-secondary); cursor: pointer;
+  border: 1px solid var(--border); transition: background 0.15s;
+}
+.commentCountBadge:hover { background: var(--bg-active); }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0; }
+.tab {
+  padding: 7px 16px; border: none; background: none;
+  font-size: 13px; font-weight: 500; color: var(--text-muted);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; font-family: inherit; transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tab:hover { color: var(--text-primary); }
+.tabActive { color: #1e40af; border-bottom-color: #1e40af; font-weight: 600; }
+.tabBadge {
+  padding: 1px 6px; background: #eff6ff; color: #1e40af;
+  border-radius: 10px; font-size: 10px; font-weight: 700;
+}
+
+/* ── Tab content ── */
+.tabContent { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── Details tab ── */
 .description {
   font-size: 14px; color: var(--text-secondary); line-height: 1.6;
   padding: 12px; background: var(--bg-subtle);
   border-radius: 8px; border: 1px solid var(--border-subtle);
 }
-
-.metaGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
+.metaGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .metaItem {
   display: flex; flex-direction: column; gap: 4px;
-  padding: 12px; background: var(--bg-subtle);
+  padding: 10px 12px; background: var(--bg-subtle);
   border-radius: 8px; border: 1px solid var(--border-subtle);
 }
-
-.metaLabel { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.metaLabel { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 .metaValue { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-
 .tagsRow { display: flex; flex-wrap: wrap; gap: 6px; }
-
-.tag {
-  padding: 4px 10px;
-  background: var(--indigo-bg); color: var(--indigo-text);
-  border-radius: 6px; font-size: 12px; font-weight: 500;
-}
-
+.tag { padding: 3px 10px; background: var(--indigo-bg); color: var(--indigo-text); border-radius: 6px; font-size: 12px; font-weight: 500; }
 .statusSection { display: flex; flex-direction: column; gap: 6px; }
 .statusLabel { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-
-.actions {
-  display: flex; align-items: center; gap: 10px;
-  padding-top: 8px; border-top: 1px solid var(--border-subtle);
-}
-
-.deleteBtn {
-  padding: 8px 16px;
-  background: var(--red-bg); border: 1.5px solid var(--red-border);
-  color: var(--red-text); border-radius: 8px;
-  font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s;
-}
-
-.cancelBtn {
-  padding: 8px 20px;
-  background: var(--bg-muted); border: 1.5px solid var(--border);
-  border-radius: 8px; font-size: 13px; font-weight: 500;
-  color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: all 0.15s;
-}
-
-.saveBtn {
-  padding: 8px 24px;
-  background: linear-gradient(135deg, #1e40af, #3b82f6);
-  border: none; border-radius: 8px;
-  font-size: 13px; font-weight: 600; color: white;
-  cursor: pointer; font-family: inherit; transition: opacity 0.15s;
-}
-
+.actions { display: flex; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
+.deleteBtn { padding: 8px 16px; background: var(--red-bg); border: 1.5px solid var(--red-border); color: var(--red-text); border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.cancelBtn { padding: 8px 20px; background: var(--bg-muted); border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+.saveBtn { padding: 8px 24px; background: linear-gradient(135deg, #1e40af, #3b82f6); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; font-family: inherit; }
 .saveBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Comments tab ── */
+.commentsList {
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: 320px; overflow-y: auto;
+  padding: 4px 2px;
+}
+.commentsLoading { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
+.commentsEmpty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 32px 16px; color: var(--text-muted); font-size: 13px; }
+.commentsEmpty span { font-size: 28px; }
+
+/* ── Comment rows ── */
+.commentRow { display: flex; align-items: flex-end; gap: 8px; }
+.commentRowOwn { flex-direction: row-reverse; }
+
+.commentBubble {
+  max-width: 75%; padding: 9px 13px;
+  background: var(--bg-subtle); border: 1px solid var(--border-subtle);
+  border-radius: 12px 12px 12px 4px;
+}
+.commentBubbleOwn {
+  background: #eff6ff; border-color: #bfdbfe;
+  border-radius: 12px 12px 4px 12px;
+}
+
+.commentMeta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.commentAuthor { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.commentRole { padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+.commentTime { font-size: 10px; color: var(--text-muted); }
+.commentDelete {
+  margin-left: auto; background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 11px; padding: 0 2px;
+  opacity: 0; transition: opacity 0.15s;
+}
+.commentBubble:hover .commentDelete { opacity: 1; }
+.commentText { font-size: 13px; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+
+/* ── Comment input ── */
+.commentForm { display: flex; align-items: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
+.commentInputWrap { flex: 1; display: flex; gap: 8px; align-items: flex-end; }
+.commentInput {
+  flex: 1; padding: 9px 12px;
+  border: 1.5px solid var(--input-border); border-radius: 10px;
+  font-size: 13px; color: var(--input-text); background: var(--input-bg);
+  outline: none; font-family: inherit; resize: none; line-height: 1.4;
+  transition: border-color 0.15s;
+}
+.commentInput:focus { border-color: #3b82f6; }
+.commentSendBtn {
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 600; color: white;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.commentSendBtn:disabled { opacity: 0.5; cursor: not-allowed; }

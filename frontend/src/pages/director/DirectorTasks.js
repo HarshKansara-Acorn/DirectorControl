@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import AddTaskModal from '../../components/modals/AddTaskModal';
+import TaskDetailModal from '../../components/modals/TaskDetailModal';
 import styles from './DirectorTasks.module.css';
 
 const COLUMNS = [
@@ -17,10 +20,13 @@ const PRIORITY = {
 };
 
 const DirectorTasks = () => {
+  const { user } = useAuth();
   const [tasks, setTasks]               = useState([]);
   const [loading, setLoading]           = useState(true);
   const [filterPriority, setFilter]     = useState('all');
+  const [filterDirection, setFilterDir] = useState('all'); // all | from-pa | from-me
   const [selectedTask, setSelectedTask] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -43,28 +49,56 @@ const DirectorTasks = () => {
     } catch { fetchTasks(); }
   };
 
-  const filtered = tasks.filter(t => filterPriority === 'all' || t.priority === filterPriority);
+  const filtered = tasks.filter(t => {
+    const priorityOk = filterPriority === 'all' || t.priority === filterPriority;
+    let directionOk = true;
+    if (filterDirection === 'from-pa') directionOk = t.createdByRole === 'admin';
+    if (filterDirection === 'from-me') directionOk = t.createdBy === user?.id;
+    return priorityOk && directionOk;
+  });
+
   const today = new Date().toISOString().split('T')[0];
   const done = tasks.filter(t => t.status === 'done').length;
+  const fromPA = tasks.filter(t => t.createdByRole === 'admin').length;
+  const fromMe = tasks.filter(t => t.createdBy === user?.id).length;
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>My Tasks</h1>
-          <p className={styles.subtitle}>{done}/{tasks.length} tasks completed</p>
+          <p className={styles.subtitle}>
+            {done}/{tasks.length} completed
+            {fromPA > 0 && <span style={{ color: '#1e40af', marginLeft: 8 }}>· {fromPA} from PA</span>}
+            {fromMe > 0 && <span style={{ color: '#7c3aed', marginLeft: 8 }}>· {fromMe} sent to PA</span>}
+          </p>
         </div>
-        <select
-          className={styles.filterSelect}
-          value={filterPriority}
-          onChange={e => setFilter(e.target.value)}
-          aria-label="Filter by priority"
-        >
-          <option value="all">All Priorities</option>
-          <option value="high">🔴 High</option>
-          <option value="medium">🟡 Medium</option>
-          <option value="low">🟢 Low</option>
-        </select>
+        <div className={styles.headerActions}>
+          <select
+            className={styles.filterSelect}
+            value={filterDirection}
+            onChange={e => setFilterDir(e.target.value)}
+            aria-label="Filter by direction"
+          >
+            <option value="all">All Tasks</option>
+            <option value="from-pa">From PA</option>
+            <option value="from-me">Sent to PA</option>
+          </select>
+          <select
+            className={styles.filterSelect}
+            value={filterPriority}
+            onChange={e => setFilter(e.target.value)}
+            aria-label="Filter by priority"
+          >
+            <option value="all">All Priorities</option>
+            <option value="high">🔴 High</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          <button className={styles.addBtn} onClick={() => setShowAddModal(true)}>
+            + Send to PA
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -101,6 +135,9 @@ const DirectorTasks = () => {
                         {colTasks.map((task, idx) => {
                           const p = PRIORITY[task.priority] || PRIORITY.medium;
                           const isOverdue = task.dueDate && task.dueDate < today && task.status !== 'done';
+                          const isFromPA  = task.createdByRole === 'admin';
+                          const isFromMe  = task.createdBy === user?.id;
+
                           return (
                             <Draggable key={task.id} draggableId={task.id} index={idx}>
                               {(provided, snapshot) => (
@@ -133,6 +170,16 @@ const DirectorTasks = () => {
                                         </span>
                                       )}
                                     </div>
+                                    {/* Direction indicator */}
+                                    <div className={styles.taskDirection}>
+                                      {isFromPA
+                                        ? <span className={styles.dirFromPA}>↓ from PA</span>
+                                        : <span className={styles.dirToPA}>↑ sent to PA</span>
+                                      }
+                                      {task.commentCount > 0 && (
+                                        <span className={styles.commentCount}>💬 {task.commentCount}</span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -150,74 +197,22 @@ const DirectorTasks = () => {
         </DragDropContext>
       )}
 
-      {/* Task Detail Modal */}
+      {/* Add task modal — director sends to PA */}
+      {showAddModal && (
+        <AddTaskModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => { setShowAddModal(false); fetchTasks(); }}
+        />
+      )}
+
+      {/* Task detail with comments */}
       {selectedTask && (
         <TaskDetailModal
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
-          onStatusChange={async (id, status) => {
-            setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-            setSelectedTask(null);
-            try { await api.patch(`/tasks/${id}/status`, { status }); }
-            catch { fetchTasks(); }
-          }}
+          onUpdate={() => { setSelectedTask(null); fetchTasks(); }}
         />
       )}
-    </div>
-  );
-};
-
-const TaskDetailModal = ({ task, onClose, onStatusChange }) => {
-  const [status, setStatus] = useState(task.status);
-  const p = { high: { bg: '#fef2f2', color: '#dc2626' }, medium: { bg: '#fff7ed', color: '#d97706' }, low: { bg: '#f0fdf4', color: '#15803d' } };
-  const ps = p[task.priority] || p.medium;
-
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>{task.title}</h2>
-          <button className={styles.closeBtn} onClick={onClose}>✕</button>
-        </div>
-        <div className={styles.modalBody}>
-          <span className={styles.priorityBadge} style={{ background: ps.bg, color: ps.color }}>
-            {task.priority?.toUpperCase()}
-          </span>
-          {task.description && <p className={styles.modalDesc}>{task.description}</p>}
-          <div className={styles.modalMeta}>
-            {task.dueDate && (
-              <div className={styles.metaItem}>
-                <span className={styles.metaLabel}>Due Date</span>
-                <span className={styles.metaValue}>{new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-              </div>
-            )}
-          </div>
-          {task.tags?.length > 0 && (
-            <div className={styles.tags}>
-              {task.tags.map(tag => <span key={tag} className={styles.tag}>{tag}</span>)}
-            </div>
-          )}
-          <div className={styles.statusSection}>
-            <label className={styles.statusLabel}>Update Status</label>
-            <select className={styles.statusSelect} value={status} onChange={e => setStatus(e.target.value)}>
-              <option value="todo">To Do</option>
-              <option value="inprogress">In Progress</option>
-              <option value="review">Review</option>
-              <option value="done">Done</option>
-            </select>
-          </div>
-          <div className={styles.modalActions}>
-            <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-            <button className={styles.saveBtn} onClick={() => onStatusChange(task.id, status)}>Save Changes</button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

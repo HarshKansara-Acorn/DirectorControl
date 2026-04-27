@@ -39,6 +39,18 @@ router.get('/directors', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// ── GET /api/users/admins — for directors to find PA(s) to assign tasks to ───
+router.get('/admins', authenticateToken, async (req, res) => {
+  try {
+    const rows = await query(
+      "SELECT Id,Name,Email,Role,Title,Avatar,AvatarColor FROM DC_Users WHERE Role='admin' AND IsActive=1 ORDER BY Name"
+    );
+    res.json(rows.map(mapUser));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch admins' });
+  }
+});
+
 // ── GET /api/users/me ─────────────────────────────────────────────────────────
 router.get('/me', authenticateToken, async (req, res) => {
   try {

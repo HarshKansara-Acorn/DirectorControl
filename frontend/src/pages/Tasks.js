@@ -21,13 +21,14 @@ const PRIORITY_COLORS = {
 };
 
 const Tasks = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { activeDirectorId, selectedDirector } = useDirector();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [filterPriority, setFilterPriority] = useState('all');
+  const [filterDirection, setFilterDirection] = useState('all'); // all | from-pa | from-director
 
   const fetchTasks = useCallback(async () => {
     if (!activeDirectorId) return;
@@ -64,15 +65,20 @@ const Tasks = () => {
     }
   };
 
-  const filteredTasks = tasks.filter(t =>
-    filterPriority === 'all' || t.priority === filterPriority
-  );
+  const filteredTasks = tasks.filter(t => {
+    const priorityOk = filterPriority === 'all' || t.priority === filterPriority;
+    let directionOk = true;
+    if (filterDirection === 'from-pa') directionOk = t.createdByRole === 'admin';
+    if (filterDirection === 'from-director') directionOk = t.createdByRole === 'director';
+    return priorityOk && directionOk;
+  });
 
   const getColumnTasks = (columnId) =>
     filteredTasks.filter(t => t.status === columnId);
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.status === 'done').length;
+  const fromDirectorCount = tasks.filter(t => t.createdByRole === 'director').length;
 
   return (
     <div className={styles.page}>
@@ -81,11 +87,21 @@ const Tasks = () => {
         <div>
           <h1 className={styles.title}>Tasks</h1>
           <p className={styles.subtitle}>
-            {selectedDirector?.name || 'Director'} — {completedTasks}/{totalTasks} tasks completed
+            {selectedDirector?.name || 'Director'} — {completedTasks}/{totalTasks} completed
+            {fromDirectorCount > 0 && <span style={{ color: '#7c3aed', marginLeft: 8 }}>· {fromDirectorCount} from director</span>}
           </p>
         </div>
         <div className={styles.headerActions}>
-          {/* Priority Filter */}
+          <select
+            className={styles.filterSelect}
+            value={filterDirection}
+            onChange={(e) => setFilterDirection(e.target.value)}
+            aria-label="Filter by direction"
+          >
+            <option value="all">All Tasks</option>
+            <option value="from-pa">PA → Director</option>
+            <option value="from-director">Director → PA</option>
+          </select>
           <select
             className={styles.filterSelect}
             value={filterPriority}
@@ -100,7 +116,7 @@ const Tasks = () => {
 
           {isAdmin && (
             <button className={styles.addBtn} onClick={() => setShowAddModal(true)}>
-              + New Task
+              + Assign Task
             </button>
           )}
         </div>
@@ -200,6 +216,17 @@ const Tasks = () => {
                                         📅 {new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                                         {task.dueTime ? ` ${task.dueTime}` : ''}
                                       </span>
+                                    )}
+                                  </div>
+
+                                  {/* Direction indicator */}
+                                  <div className={styles.taskDirection}>
+                                    {task.createdByRole === 'director'
+                                      ? <span className={styles.dirFromDirector}>↑ from {task.createdByName?.split(' ')[0]}</span>
+                                      : <span className={styles.dirFromPA}>↓ PA → {task.assignedToName?.split(' ')[0]}</span>
+                                    }
+                                    {task.commentCount > 0 && (
+                                      <span className={styles.commentCount}>💬 {task.commentCount}</span>
                                     )}
                                   </div>
                                 </div>

@@ -102,3 +102,37 @@
 .modalActions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 4px; border-top: 1px solid var(--border-subtle); }
 .cancelBtn { padding: 8px 20px; background: var(--bg-muted); border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
 .saveBtn { padding: 8px 24px; background: linear-gradient(135deg, #1e40af, #3b82f6); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; font-family: inherit; }
+
+/* ── Two-way task additions ── */
+.headerActions { display: flex; align-items: center; gap: 10px; }
+
+.addBtn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: opacity 0.15s;
+}
+.addBtn:hover { opacity: 0.9; }
+
+.taskDirection {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 5px; padding-top: 5px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dirFromPA {
+  font-size: 10px; font-weight: 600;
+  color: #1e40af; background: #eff6ff;
+  padding: 1px 6px; border-radius: 6px;
+}
+
+.dirToPA {
+  font-size: 10px; font-weight: 600;
+  color: #7c3aed; background: #faf5ff;
+  padding: 1px 6px; border-radius: 6px;
+}
+
+.commentCount {
+  font-size: 10px; color: var(--text-muted);
+}
