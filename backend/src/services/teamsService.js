@@ -1,17 +1,14 @@
 /**
- * Microsoft Graph API service for Teams integration.
+ * Microsoft Graph API service for Outlook Calendar integration.
  *
- * Fetches from Graph API:
- *  - Calendar events (meetings, all-day events)
- *  - Online meetings (Teams calls)
- *  - Tasks from Microsoft To Do / Planner
- *  - User presence (Available, Busy, Away, etc.)
- *  - Unread chat messages / mentions
- *  - Out-of-office / automatic replies status
+ * Fetches from Graph API via OAuth2 (delegated permissions):
+ *  - Outlook Calendar events
+ *  - Mailbox settings (out-of-office / automatic replies)
+ *  - User profile
  *
- * Auth flow: OAuth2 Authorization Code (delegated permissions)
- * Each director connects their own Microsoft account.
- * Tokens are stored in memory (replace with DB when MS SQL is ready).
+ * Auth flow: OAuth2 Authorization Code
+ * Each user connects their own Microsoft/Outlook account.
+ * Tokens are stored in DC_TeamsTokens table (reused for Outlook).
  */
 
 const axios = require('axios');
@@ -20,11 +17,20 @@ const { query, queryOne, execute, sql } = require('../config/db');
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 
 // In-memory cache: { userId -> { accessToken, refreshToken, expiresAt, msUserEmail } }
-// Backed by DC_TeamsTokens table for persistence across restarts.
 const tokenStore = {};
 
+// Scopes needed for Outlook Calendar integration
+const OUTLOOK_SCOPES = [
+  'offline_access',
+  'User.Read',
+  'Calendars.Read',
+  'Calendars.ReadWrite',
+  'MailboxSettings.Read',
+  'Mail.Read',
+].join(' ');
+
 /**
- * Build the OAuth2 authorization URL.
+ * Build the OAuth2 authorization URL for Outlook.
  * @param {string} state - JSON string containing { userId, returnTo }
  */
 const getAuthUrl = (state) => {
@@ -33,17 +39,10 @@ const getAuthUrl = (state) => {
     response_type: 'code',
     redirect_uri: process.env.AZURE_REDIRECT_URI,
     response_mode: 'query',
-    scope: [
-      'offline_access',
-      'User.Read',
-      'Calendars.Read',
-      'OnlineMeetings.Read',
-      'Tasks.Read',
-      'Presence.Read',
-      'Chat.Read',
-      'MailboxSettings.Read',
-    ].join(' '),
+    scope: OUTLOOK_SCOPES,
     state,
+    // prompt=select_account lets the user pick which Microsoft account to use
+    prompt: 'select_account',
   });
 
   return `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/authorize?${params}`;
@@ -86,11 +85,7 @@ const refreshAccessToken = async (userId) => {
     client_secret: process.env.AZURE_CLIENT_SECRET,
     refresh_token: stored.refreshToken,
     grant_type: 'refresh_token',
-    scope: [
-      'offline_access', 'User.Read', 'Calendars.Read',
-      'OnlineMeetings.Read', 'Tasks.Read', 'Presence.Read',
-      'Chat.Read', 'MailboxSettings.Read',
-    ].join(' '),
+    scope: OUTLOOK_SCOPES,
   });
 
   const res = await axios.post(
@@ -242,8 +237,7 @@ const graphGet = async (directorId, endpoint, params = {}) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Get calendar events for the next N days.
- * Includes Teams meetings, Outlook calendar events, all-day events.
+ * Get Outlook calendar events for the next N days.
  */
 const getCalendarEvents = async (directorId, days = 30) => {
   const now = new Date();
@@ -252,36 +246,41 @@ const getCalendarEvents = async (directorId, days = 30) => {
   const data = await graphGet(directorId, '/me/calendarView', {
     startDateTime: now.toISOString(),
     endDateTime: end.toISOString(),
-    $select: 'id,subject,bodyPreview,start,end,location,attendees,isAllDay,onlineMeeting,onlineMeetingUrl,organizer,importance,showAs,responseStatus,recurrence,categories',
+    $select: 'id,subject,bodyPreview,start,end,location,attendees,isAllDay,onlineMeeting,onlineMeetingUrl,organizer,importance,showAs,responseStatus,categories',
     $orderby: 'start/dateTime',
     $top: 100,
   });
 
-  return (data.value || []).map(e => ({
-    id: `teams-cal-${e.id}`,
-    source: 'teams',
-    title: e.subject || '(No title)',
-    description: e.bodyPreview || '',
-    startDate: e.start?.dateTime?.split('T')[0] || '',
-    startTime: e.start?.dateTime?.split('T')[1]?.substring(0, 5) || '',
-    endDate: e.end?.dateTime?.split('T')[0] || '',
-    endTime: e.end?.dateTime?.split('T')[1]?.substring(0, 5) || '',
-    isAllDay: e.isAllDay || false,
-    location: e.location?.displayName || '',
-    attendees: (e.attendees || []).map(a => a.emailAddress?.name || a.emailAddress?.address).filter(Boolean),
-    isTeamsMeeting: !!e.onlineMeeting,
-    joinUrl: e.onlineMeeting?.joinUrl || e.onlineMeetingUrl || null,
-    organizer: e.organizer?.emailAddress?.name || '',
-    importance: e.importance || 'normal',
-    showAs: e.showAs || 'busy',
-    responseStatus: e.responseStatus?.response || 'none',
-    categories: e.categories || [],
-    type: e.onlineMeeting ? 'teams_meeting' : (e.isAllDay ? 'all_day' : 'meeting'),
-  }));
+  return (data.value || []).map(e => {
+    // Outlook returns times in the event's timezone — extract date/time parts directly
+    const startDT = e.start?.dateTime || '';
+    const endDT   = e.end?.dateTime   || '';
+    return {
+      id: `outlook-cal-${e.id}`,
+      source: 'outlook',
+      title: e.subject || '(No title)',
+      description: e.bodyPreview || '',
+      startDate: startDT.split('T')[0] || '',
+      startTime: startDT.split('T')[1]?.substring(0, 5) || '',
+      endDate:   endDT.split('T')[0] || '',
+      endTime:   endDT.split('T')[1]?.substring(0, 5) || '',
+      isAllDay: e.isAllDay || false,
+      location: e.location?.displayName || '',
+      attendees: (e.attendees || []).map(a => a.emailAddress?.name || a.emailAddress?.address).filter(Boolean),
+      isOnlineMeeting: !!e.onlineMeeting,
+      joinUrl: e.onlineMeeting?.joinUrl || e.onlineMeetingUrl || null,
+      organizer: e.organizer?.emailAddress?.name || '',
+      importance: e.importance || 'normal',
+      showAs: e.showAs || 'busy',
+      responseStatus: e.responseStatus?.response || 'none',
+      categories: e.categories || [],
+      type: e.onlineMeeting ? 'online_meeting' : (e.isAllDay ? 'all_day' : 'meeting'),
+    };
+  });
 };
 
 /**
- * Get today's calendar events only.
+ * Get today's Outlook calendar events only.
  */
 const getTodayEvents = async (directorId) => {
   const today = new Date();
@@ -296,20 +295,24 @@ const getTodayEvents = async (directorId) => {
     $top: 50,
   });
 
-  return (data.value || []).map(e => ({
-    id: `teams-today-${e.id}`,
-    source: 'teams',
-    title: e.subject || '(No title)',
-    startTime: e.start?.dateTime?.split('T')[1]?.substring(0, 5) || '',
-    endTime: e.end?.dateTime?.split('T')[1]?.substring(0, 5) || '',
-    isAllDay: e.isAllDay || false,
-    location: e.location?.displayName || '',
-    attendees: (e.attendees || []).map(a => a.emailAddress?.name).filter(Boolean),
-    isTeamsMeeting: !!e.onlineMeeting,
-    joinUrl: e.onlineMeeting?.joinUrl || e.onlineMeetingUrl || null,
-    organizer: e.organizer?.emailAddress?.name || '',
-    importance: e.importance || 'normal',
-  }));
+  return (data.value || []).map(e => {
+    const startDT = e.start?.dateTime || '';
+    const endDT   = e.end?.dateTime   || '';
+    return {
+      id: `outlook-today-${e.id}`,
+      source: 'outlook',
+      title: e.subject || '(No title)',
+      startTime: startDT.split('T')[1]?.substring(0, 5) || '',
+      endTime:   endDT.split('T')[1]?.substring(0, 5) || '',
+      isAllDay: e.isAllDay || false,
+      location: e.location?.displayName || '',
+      attendees: (e.attendees || []).map(a => a.emailAddress?.name).filter(Boolean),
+      isOnlineMeeting: !!e.onlineMeeting,
+      joinUrl: e.onlineMeeting?.joinUrl || e.onlineMeetingUrl || null,
+      organizer: e.organizer?.emailAddress?.name || '',
+      importance: e.importance || 'normal',
+    };
+  });
 };
 
 /**

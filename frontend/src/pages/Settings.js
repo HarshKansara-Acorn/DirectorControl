@@ -549,16 +549,15 @@ const SessionsSection = () => {
 const LinkedAccountsSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [teamsStatus, setTeamsStatus] = useState(null); // null = loading
-  const [connecting, setConnecting]   = useState(false);
-  const [msg, setMsg]                 = useState('');
+  const [outlookStatus, setOutlookStatus] = useState(null); // null = loading
+  const [connecting, setConnecting]       = useState(false);
+  const [msg, setMsg]                     = useState('');
 
   // Check URL params after OAuth redirect back to /settings?section=linked
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('teamsConnected') === 'true') {
-      setMsg('success:Microsoft Teams connected successfully!');
-      // Clean URL
+      setMsg('success:Outlook Calendar connected successfully!');
       window.history.replaceState({}, '', '/settings?section=linked');
     }
     if (params.get('teamsError')) {
@@ -567,19 +566,19 @@ const LinkedAccountsSection = () => {
     }
   }, []);
 
-  // Fetch Teams connection status for the current user
-  const fetchTeamsStatus = useCallback(async () => {
+  // Fetch Outlook connection status for the current user
+  const fetchOutlookStatus = useCallback(async () => {
     try {
       const res = await api.get('/teams/status', { params: { userId: user?.id } });
-      setTeamsStatus(res.data);
+      setOutlookStatus(res.data);
     } catch {
-      setTeamsStatus({ connected: false, configured: false });
+      setOutlookStatus({ connected: false, configured: false });
     }
   }, [user?.id]);
 
-  useEffect(() => { fetchTeamsStatus(); }, [fetchTeamsStatus]);
+  useEffect(() => { fetchOutlookStatus(); }, [fetchOutlookStatus]);
 
-  const handleTeamsConnect = async () => {
+  const handleConnect = async () => {
     setConnecting(true); setMsg('');
     try {
       const res = await api.get('/teams/auth/connect', {
@@ -588,7 +587,7 @@ const LinkedAccountsSection = () => {
       if (res.data.authUrl) {
         window.location.href = res.data.authUrl;
       } else {
-        setMsg('error:Teams integration not configured yet. Ask your administrator to set up Azure AD credentials.');
+        setMsg('error:Outlook integration not configured. Contact your administrator.');
       }
     } catch (err) {
       setMsg(`error:${err.response?.data?.message || 'Failed to start connection'}`);
@@ -597,12 +596,12 @@ const LinkedAccountsSection = () => {
     }
   };
 
-  const handleTeamsDisconnect = async () => {
+  const handleDisconnect = async () => {
     setMsg('');
     try {
       await api.post('/teams/auth/disconnect', { userId: user?.id });
-      setTeamsStatus(s => ({ ...s, connected: false, msUserEmail: null }));
-      setMsg('success:Microsoft Teams disconnected.');
+      setOutlookStatus(s => ({ ...s, connected: false, msUserEmail: null }));
+      setMsg('success:Outlook Calendar disconnected.');
     } catch (err) {
       setMsg(`error:${err.response?.data?.message || 'Failed to disconnect'}`);
     }
@@ -617,7 +616,7 @@ const LinkedAccountsSection = () => {
         <Link2 size={18} />
         <div>
           <h2 className={styles.sectionTitle}>Linked Accounts</h2>
-          <p className={styles.sectionDesc}>Connect third-party accounts for integrations</p>
+          <p className={styles.sectionDesc}>Connect your Microsoft account to sync your Outlook Calendar</p>
         </div>
       </div>
 
@@ -628,44 +627,46 @@ const LinkedAccountsSection = () => {
       )}
 
       <div className={styles.linkedList}>
-        {/* ── Microsoft Teams ── */}
-        <div className={`${styles.linkedCard} ${teamsStatus?.connected ? styles.linkedCardConnected : ''}`}>
+        {/* ── Microsoft Outlook ── */}
+        <div className={`${styles.linkedCard} ${outlookStatus?.connected ? styles.linkedCardConnected : ''}`}>
           <div className={styles.linkedIconWrap}>
-            <span className={styles.linkedIcon}>🪟</span>
-            {teamsStatus?.connected && <span className={styles.linkedConnectedDot} />}
+            <span className={styles.linkedIcon}>📧</span>
+            {outlookStatus?.connected && <span className={styles.linkedConnectedDot} />}
           </div>
           <div className={styles.linkedInfo}>
-            <div className={styles.linkedName}>Microsoft Teams</div>
-            {teamsStatus === null ? (
+            <div className={styles.linkedName}>Microsoft Outlook Calendar</div>
+            {outlookStatus === null ? (
               <div className={styles.linkedDesc}>Checking status...</div>
-            ) : teamsStatus.connected ? (
+            ) : outlookStatus.connected ? (
               <div className={styles.linkedDescConnected}>
-                ✓ Connected as <strong>{teamsStatus.msUserEmail}</strong>
+                ✓ Connected as <strong>{outlookStatus.msUserEmail}</strong>
                 <br />
-                <span className={styles.linkedDescSub}>Calendar, tasks and presence are syncing</span>
+                <span className={styles.linkedDescSub}>
+                  Outlook Calendar is syncing — events appear in the Events tab
+                </span>
               </div>
             ) : (
               <div className={styles.linkedDesc}>
-                Connect to sync your Teams calendar, meetings and To Do tasks
-                {!teamsStatus.configured && (
-                  <span className={styles.linkedNotConfigured}> · Azure AD not configured yet</span>
+                Sign in with your Microsoft account to sync your Outlook Calendar events into the app
+                {!outlookStatus?.configured && (
+                  <span className={styles.linkedNotConfigured}> · Azure AD not configured</span>
                 )}
               </div>
             )}
           </div>
           <div className={styles.linkedActions}>
-            {teamsStatus?.connected ? (
+            {outlookStatus?.connected ? (
               <>
                 <button
                   className={styles.linkedViewBtn}
-                  onClick={() => navigate('/teams')}
-                  title="Open Teams tab"
+                  onClick={() => navigate('/events')}
+                  title="View synced events"
                 >
-                  View
+                  View Events
                 </button>
                 <button
                   className={styles.disconnectBtn}
-                  onClick={handleTeamsDisconnect}
+                  onClick={handleDisconnect}
                 >
                   Disconnect
                 </button>
@@ -673,37 +674,23 @@ const LinkedAccountsSection = () => {
             ) : (
               <button
                 className={styles.connectBtn}
-                onClick={handleTeamsConnect}
-                disabled={connecting || teamsStatus === null}
+                onClick={handleConnect}
+                disabled={connecting || outlookStatus === null}
               >
-                {connecting ? 'Connecting...' : 'Connect'}
+                {connecting ? 'Connecting...' : 'Connect Outlook'}
               </button>
             )}
           </div>
         </div>
 
-        {/* ── Google (placeholder) ── */}
+        {/* ── Google Calendar (placeholder) ── */}
         <div className={styles.linkedCard}>
           <div className={styles.linkedIconWrap}>
-            <span className={styles.linkedIcon}>🔵</span>
+            <span className={styles.linkedIcon}>📅</span>
           </div>
           <div className={styles.linkedInfo}>
-            <div className={styles.linkedName}>Google</div>
+            <div className={styles.linkedName}>Google Calendar</div>
             <div className={styles.linkedDesc}>Google Calendar integration — coming soon</div>
-          </div>
-          <div className={styles.linkedActions}>
-            <button className={styles.connectBtn} disabled title="Coming soon">Connect</button>
-          </div>
-        </div>
-
-        {/* ── Outlook (placeholder) ── */}
-        <div className={styles.linkedCard}>
-          <div className={styles.linkedIconWrap}>
-            <span className={styles.linkedIcon}>📧</span>
-          </div>
-          <div className={styles.linkedInfo}>
-            <div className={styles.linkedName}>Outlook</div>
-            <div className={styles.linkedDesc}>Outlook email integration — coming soon</div>
           </div>
           <div className={styles.linkedActions}>
             <button className={styles.connectBtn} disabled title="Coming soon">Connect</button>
@@ -711,16 +698,30 @@ const LinkedAccountsSection = () => {
         </div>
       </div>
 
-      {/* Setup note if not configured */}
-      {teamsStatus && !teamsStatus.configured && (
+      {/* Setup note if Azure AD not configured */}
+      {outlookStatus && !outlookStatus.configured && (
         <div className={styles.infoBox} style={{ marginTop: 16 }}>
           <AlertTriangle size={16} color="var(--orange-text)" />
           <div>
             <strong>Azure AD not configured</strong>
             <p>
-              To enable Teams integration, add <code>AZURE_CLIENT_ID</code>, <code>AZURE_CLIENT_SECRET</code>,
-              and <code>AZURE_TENANT_ID</code> to <code>backend/.env</code>, then restart the server.
-              See the Teams tab for the full setup guide.
+              To enable Outlook integration, ensure <code>AZURE_CLIENT_ID</code>, <code>AZURE_CLIENT_SECRET</code>,
+              and <code>AZURE_TENANT_ID</code> are set in <code>backend/.env</code> and the server is restarted.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* How it works info box */}
+      {outlookStatus?.configured && !outlookStatus?.connected && (
+        <div className={styles.infoBox} style={{ marginTop: 16 }}>
+          <Globe size={16} />
+          <div>
+            <strong>How it works</strong>
+            <p>
+              Click <strong>Connect Outlook</strong> to sign in with your Microsoft account.
+              Your Outlook Calendar events will be pulled into the <strong>Events</strong> tab automatically.
+              Each user connects their own account — your calendar stays private to you.
             </p>
           </div>
         </div>

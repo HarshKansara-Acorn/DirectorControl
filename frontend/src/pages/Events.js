@@ -4,7 +4,7 @@ import { useDirector } from '../context/DirectorContext';
 import api from '../services/api';
 import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
-import { Calendar, MapPin, Users, Clock, Edit2, Trash2, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Edit2, Trash2, Plus, RefreshCw } from 'lucide-react';
 import DirectorSelector from '../components/modals/DirectorSelector';
 import FileUploadButton from '../components/common/FileUploadButton';
 import styles from './PageLayout.module.css';
@@ -38,6 +38,8 @@ const Events = () => {
   const [selectedDirectors, setSelectedDirectors] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [syncMsg, setSyncMsg] = useState('');
+  const [syncing, setSyncing] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     if (!activeDirectorId) return;
@@ -89,6 +91,28 @@ const Events = () => {
     catch (err) { console.error(err); }
   };
 
+  const handleOutlookSync = async () => {
+    if (!activeDirectorId) return;
+    setSyncing(true); setSyncMsg('');
+    try {
+      // Check if Outlook is connected for this director
+      const statusRes = await api.get('/teams/status', { params: { userId: activeDirectorId } });
+      if (!statusRes.data.connected) {
+        setSyncMsg('❌ Outlook not connected for this director. Go to Settings → Linked Accounts to connect.');
+        setSyncing(false);
+        return;
+      }
+      const res = await api.post('/teams/sync', { directorId: activeDirectorId });
+      setSyncMsg(`✅ ${res.data.message}`);
+      fetchEvents();
+    } catch (err) {
+      setSyncMsg(`❌ ${err.response?.data?.message || 'Sync failed'}`);
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMsg(''), 5000);
+    }
+  };
+
   const filtered = events.filter(e => filterType === 'all' || e.type === filterType);
   const upcoming = events.filter(e => e.status === 'upcoming').length;
 
@@ -116,9 +140,34 @@ const Events = () => {
             <option value="all">All Types</option>
             {Object.entries(TYPE_STYLES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
-          {isAdmin && <button className={styles.addBtn} onClick={openAdd}><Plus size={15} /> Add Event</button>}
+          {isAdmin && (
+            <>
+              <button
+                className={styles.syncBtn}
+                onClick={handleOutlookSync}
+                disabled={syncing}
+                title="Sync Outlook Calendar"
+              >
+                <RefreshCw size={14} className={syncing ? styles.spinning : ''} />
+                {syncing ? 'Syncing...' : 'Sync Outlook'}
+              </button>
+              <button className={styles.addBtn} onClick={openAdd}><Plus size={15} /> Add Event</button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Sync message */}
+      {syncMsg && (
+        <div style={{
+          padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+          background: syncMsg.startsWith('✅') ? '#f0fdf4' : '#fef2f2',
+          color: syncMsg.startsWith('✅') ? '#15803d' : '#dc2626',
+          border: `1px solid ${syncMsg.startsWith('✅') ? '#bbf7d0' : '#fecaca'}`,
+        }}>
+          {syncMsg}
+        </div>
+      )}
 
       {loading ? (
         <div className={styles.skeletonGrid}>{[...Array(3)].map((_, i) => <div key={i} className={styles.skeletonCard} />)}</div>

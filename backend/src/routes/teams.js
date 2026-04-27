@@ -57,7 +57,7 @@ router.get('/auth/callback', async (req, res) => {
   }
 
   const redirectBase = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const returnPath   = returnTo === 'teams' ? '/teams' : '/settings?section=linked';
+  const returnPath   = '/settings?section=linked';
 
   if (error) {
     return res.redirect(
@@ -255,12 +255,12 @@ router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
          VALUES
           (@id, @title, @desc, @type, @did, @sd, @ed,
            @st, @et, @loc, @att, @allday, @pri,
-           @status, @notes, @tid, @jurl, 'teams', @cb, GETUTCDATE())`,
+           @status, @notes, @tid, @jurl, 'outlook', @cb, GETUTCDATE())`,
         {
           id:     { type: sql.NVarChar, value: uuidv4() },
           title:  { type: sql.NVarChar, value: te.title },
           desc:   { type: sql.NVarChar, value: te.description || '' },
-          type:   { type: sql.NVarChar, value: te.isTeamsMeeting ? 'teams_meeting' : 'meeting' },
+          type:   { type: sql.NVarChar, value: te.isOnlineMeeting ? 'online_meeting' : 'meeting' },
           did:    { type: sql.NVarChar, value: directorId },
           sd:     { type: sql.Date,     value: te.startDate },
           ed:     { type: sql.Date,     value: te.endDate || te.startDate },
@@ -280,7 +280,7 @@ router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
       added++;
     }
 
-    res.json({ message: `Sync complete. Added: ${added}, Skipped (already exists): ${skipped}` });
+    res.json({ message: `Outlook sync complete. Added: ${added}, Skipped (already exists): ${skipped}` });
   } catch (err) {
     console.error('Teams sync error:', err.message);
     res.status(500).json({ message: 'Sync failed', error: err.message });
