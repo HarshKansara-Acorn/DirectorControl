@@ -27,19 +27,40 @@ const DirectorLayout = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch]               = useState(false);
   const [showCalendar, setShowCalendar]           = useState(false);
-  const [calendarEvents, setCalendarEvents]       = useState([]);
+  const [calendarData, setCalendarData]           = useState({});
+  const [calendarLoading, setCalendarLoading]     = useState(false);
   const navigate = useNavigate();
 
-  const fetchCalendarEvents = useCallback(async () => {
+  const fetchCalendarData = useCallback(async () => {
+    setCalendarLoading(true);
     try {
-      const res = await api.get('/events');
-      setCalendarEvents(res.data || []);
+      const [events, tasks, reminders, travel, approvals, emails, meetings] =
+        await Promise.allSettled([
+          api.get('/events'),
+          api.get('/tasks'),
+          api.get('/reminders'),
+          api.get('/travel'),
+          api.get('/approvals'),
+          api.get('/emails'),
+          api.get('/meetings'),
+        ]);
+      setCalendarData({
+        events:    events.status    === 'fulfilled' ? events.value.data    : [],
+        tasks:     tasks.status     === 'fulfilled' ? tasks.value.data     : [],
+        reminders: reminders.status === 'fulfilled' ? reminders.value.data : [],
+        travel:    travel.status    === 'fulfilled' ? travel.value.data    : [],
+        approvals: approvals.status === 'fulfilled' ? approvals.value.data : [],
+        emails:    emails.status    === 'fulfilled' ? emails.value.data    : [],
+        meetings:  meetings.status  === 'fulfilled' ? meetings.value.data  : [],
+      });
     } catch {
-      setCalendarEvents([]);
+      setCalendarData({});
+    } finally {
+      setCalendarLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchCalendarEvents(); }, [fetchCalendarEvents]);
+  useEffect(() => { fetchCalendarData(); }, [fetchCalendarData]);
 
   // Ctrl+K shortcut
   useEffect(() => {
@@ -114,7 +135,7 @@ const DirectorLayout = () => {
                 setShowNotifications(false);
                 setShowUserMenu(false);
                 setShowSearch(false);
-                if (!showCalendar) fetchCalendarEvents();
+                if (!showCalendar) fetchCalendarData();
               }}
               title="Calendar"
             >
@@ -123,7 +144,9 @@ const DirectorLayout = () => {
             {showCalendar && (
               <CalendarPanel
                 onClose={() => setShowCalendar(false)}
-                events={calendarEvents}
+                data={calendarData}
+                loading={calendarLoading}
+                directorName={user?.name || ''}
               />
             )}
           </div>

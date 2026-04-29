@@ -34,22 +34,43 @@ const DashboardLayout = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarData, setCalendarData] = useState({});
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch events for the calendar panel whenever the active director changes
-  const fetchCalendarEvents = useCallback(async () => {
+  // Fetch all 7 data sources for the calendar panel
+  const fetchCalendarData = useCallback(async () => {
+    if (!activeDirectorId) return;
+    setCalendarLoading(true);
     try {
-      const params = {};
-      if (activeDirectorId) params.directorId = activeDirectorId;
-      const res = await api.get('/events', { params });
-      setCalendarEvents(res.data || []);
+      const p = { directorId: activeDirectorId };
+      const [events, tasks, reminders, travel, approvals, emails, meetings] =
+        await Promise.allSettled([
+          api.get('/events',    { params: p }),
+          api.get('/tasks',     { params: p }),
+          api.get('/reminders', { params: p }),
+          api.get('/travel',    { params: p }),
+          api.get('/approvals', { params: p }),
+          api.get('/emails',    { params: p }),
+          api.get('/meetings',  { params: p }),
+        ]);
+      setCalendarData({
+        events:    events.status    === 'fulfilled' ? events.value.data    : [],
+        tasks:     tasks.status     === 'fulfilled' ? tasks.value.data     : [],
+        reminders: reminders.status === 'fulfilled' ? reminders.value.data : [],
+        travel:    travel.status    === 'fulfilled' ? travel.value.data    : [],
+        approvals: approvals.status === 'fulfilled' ? approvals.value.data : [],
+        emails:    emails.status    === 'fulfilled' ? emails.value.data    : [],
+        meetings:  meetings.status  === 'fulfilled' ? meetings.value.data  : [],
+      });
     } catch {
-      setCalendarEvents([]);
+      setCalendarData({});
+    } finally {
+      setCalendarLoading(false);
     }
   }, [activeDirectorId]);
 
-  useEffect(() => { fetchCalendarEvents(); }, [fetchCalendarEvents]);
+  useEffect(() => { fetchCalendarData(); }, [fetchCalendarData]);
 
   // Global keyboard shortcut: Ctrl+K or Cmd+K opens search
   useEffect(() => {
@@ -166,7 +187,7 @@ const DashboardLayout = () => {
                 setShowNotifications(false);
                 setShowUserMenu(false);
                 setShowSearch(false);
-                if (!showCalendar) fetchCalendarEvents();
+                if (!showCalendar) fetchCalendarData();
               }}
               title="Calendar"
             >
@@ -175,7 +196,9 @@ const DashboardLayout = () => {
             {showCalendar && (
               <CalendarPanel
                 onClose={() => setShowCalendar(false)}
-                events={calendarEvents}
+                data={calendarData}
+                loading={calendarLoading}
+                directorName={selectedDirector?.name || ''}
               />
             )}
           </div>
