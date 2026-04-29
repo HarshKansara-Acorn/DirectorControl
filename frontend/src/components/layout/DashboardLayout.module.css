@@ -180,3 +180,6 @@
   flex: 1; padding: 28px;
   max-width: 1400px; width: 100%; margin: 0 auto;
 }
+
+/* ── Calendar panel wrapper ── */
+.calendarWrapper { position: relative; }

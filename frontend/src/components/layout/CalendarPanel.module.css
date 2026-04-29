@@ -1,0 +1,218 @@
+/* ── Panel container ── */
+.panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 300px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  z-index: 300;
+  overflow: hidden;
+  animation: slideDown 0.18s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.monthLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 130px;
+  text-align: center;
+}
+
+.navBtn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 7px;
+  cursor: pointer; color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.navBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.headerActions { display: flex; align-items: center; gap: 6px; }
+
+.todayBtn {
+  padding: 4px 10px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.todayBtn:hover { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+
+.closeBtn {
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 6px;
+  cursor: pointer; color: var(--text-muted);
+  transition: all 0.15s;
+}
+.closeBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ── Day labels ── */
+.dayLabels {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 8px 12px 4px;
+}
+
+.dayLabel {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 4px 12px 12px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+  padding: 0;
+}
+
+.cell:hover:not(.cellOther) { background: var(--bg-hover); }
+
+.cellOther { cursor: default; }
+.cellOther .cellNum { color: var(--text-disabled); }
+
+.cellNum {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.cellToday {
+  background: #1e40af !important;
+}
+.cellToday .cellNum { color: white; font-weight: 700; }
+.cellToday .dot { background: rgba(255,255,255,0.7) !important; }
+
+.cellSelected {
+  background: #eff6ff;
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+.cellSelected .cellNum { color: #1e40af; font-weight: 700; }
+
+/* ── Event dots ── */
+.dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+}
+
+.dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: #3b82f6;
+  flex-shrink: 0;
+}
+
+/* ── Day detail ── */
+.dayDetail {
+  border-top: 1px solid var(--border-subtle);
+  padding: 12px 16px 14px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.dayDetailTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.noEvents {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.eventList {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.eventItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.eventDot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.eventInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.eventTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eventTime {
+  font-size: 11px;
+  color: var(--text-muted);
+}

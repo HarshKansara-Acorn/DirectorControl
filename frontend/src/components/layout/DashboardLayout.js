@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useDirector } from '../../context/DirectorContext';
@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import NotificationPanel from './NotificationPanel';
 import SearchPanel from './SearchPanel';
+import CalendarPanel from './CalendarPanel';
 import ThemeToggle from './ThemeToggle';
+import api from '../../services/api';
 import styles from './DashboardLayout.module.css';
 
 const navItems = [
@@ -25,13 +27,29 @@ const navItems = [
 
 const DashboardLayout = () => {
   const { user, logout, isAdmin } = useAuth();
-  const { directors, selectedDirector, setSelectedDirector } = useDirector();
+  const { directors, selectedDirector, setSelectedDirector, activeDirectorId } = useDirector();
   const { notifications } = useNotifications();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showDirectorDropdown, setShowDirectorDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const navigate = useNavigate();
+
+  // Fetch events for the calendar panel whenever the active director changes
+  const fetchCalendarEvents = useCallback(async () => {
+    try {
+      const params = {};
+      if (activeDirectorId) params.directorId = activeDirectorId;
+      const res = await api.get('/events', { params });
+      setCalendarEvents(res.data || []);
+    } catch {
+      setCalendarEvents([]);
+    }
+  }, [activeDirectorId]);
+
+  useEffect(() => { fetchCalendarEvents(); }, [fetchCalendarEvents]);
 
   // Global keyboard shortcut: Ctrl+K or Cmd+K opens search
   useEffect(() => {
@@ -129,7 +147,7 @@ const DashboardLayout = () => {
           <button
             className={`${styles.iconBtn} ${showSearch ? styles.iconBtnActive : ''}`}
             aria-label="Search (Ctrl+K)"
-            onClick={() => { setShowSearch(true); setShowNotifications(false); setShowUserMenu(false); }}
+            onClick={() => { setShowSearch(true); setShowNotifications(false); setShowUserMenu(false); setShowCalendar(false); }}
             title="Search (Ctrl+K)"
           >
             <Search size={18} />
@@ -137,6 +155,30 @@ const DashboardLayout = () => {
 
           {/* Search Panel */}
           {showSearch && <SearchPanel onClose={() => setShowSearch(false)} />}
+
+          {/* Calendar */}
+          <div className={styles.calendarWrapper}>
+            <button
+              className={`${styles.iconBtn} ${showCalendar ? styles.iconBtnActive : ''}`}
+              aria-label="Calendar"
+              onClick={() => {
+                setShowCalendar(v => !v);
+                setShowNotifications(false);
+                setShowUserMenu(false);
+                setShowSearch(false);
+                if (!showCalendar) fetchCalendarEvents();
+              }}
+              title="Calendar"
+            >
+              <Calendar size={18} />
+            </button>
+            {showCalendar && (
+              <CalendarPanel
+                onClose={() => setShowCalendar(false)}
+                events={calendarEvents}
+              />
+            )}
+          </div>
 
           {/* Theme Toggle */}
           <ThemeToggle />
