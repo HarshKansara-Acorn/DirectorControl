@@ -1,11 +1,155 @@
-.summary { display: flex; gap: 16px; justify-content: space-around; padding: 8px 0; }
-
-.summaryItem {
-  display: flex; align-items: center; gap: 10px; flex: 1;
-  padding: 12px; background: var(--bg-subtle);
-  border-radius: 10px; border: 1px solid var(--border-subtle);
+/* ── 4-tile stat row ── */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 4px 0 8px;
 }
 
-.summaryIcon { font-size: 20px; }
-.summaryLabel { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-.summaryValue { font-size: 24px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+@media (max-width: 700px) {
+  .summary { grid-template-columns: repeat(2, 1fr); }
+}
+
+.summaryItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px;
+  background: var(--bg-subtle);
+  border-radius: 10px;
+  border: 1.5px solid var(--border-subtle);
+  cursor: default;
+  font-family: inherit;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.summaryItemClickable {
+  cursor: pointer;
+}
+
+.summaryItemClickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.summaryItemActive {
+  outline: 2px solid #7c3aed;
+  outline-offset: -2px;
+}
+
+.summaryIcon { font-size: 18px; flex-shrink: 0; }
+
+.summaryLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.summaryValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+/* ── In Progress detail panel ── */
+.inProgressPanel {
+  margin-top: 4px;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 10px;
+  background: #faf5ff;
+  overflow: hidden;
+  animation: expandIn 0.18s ease;
+}
+
+@keyframes expandIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.inProgressTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7c3aed;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #ede9fe;
+}
+
+.inProgressCount {
+  background: #7c3aed;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.inProgressList {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.inProgressItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  transition: background 0.12s;
+}
+
+.inProgressItem:hover { background: #ede9fe; }
+
+.inProgressDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.inProgressInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.inProgressLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inProgressSub {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inProgressBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}

@@ -105,7 +105,7 @@ const Dashboard = () => {
           <RemindersCard reminders={data.reminders} onRefresh={fetchAll} activeDirectorId={activeDirectorId} />
           <ApprovalsCard approvals={data.approvals} onRefresh={fetchAll} activeDirectorId={activeDirectorId} />
           <TravelCard travel={data.travel} onRefresh={fetchAll} activeDirectorId={activeDirectorId} />
-          <TaskSummaryCard tasks={data.tasks} />
+          <TaskSummaryCard tasks={data.tasks} reminders={data.reminders} meetings={data.meetings} />
         </div>
       )}
     </div>
