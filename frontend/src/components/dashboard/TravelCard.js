@@ -6,50 +6,85 @@ import ItemDetailModal from './ItemDetailModal';
 import { useAuth } from '../../context/AuthContext';
 import styles from './CardItems.module.css';
 
+const STATUS_STYLES = {
+  upcoming:  { bg: '#eff6ff', color: '#1e40af', label: 'Upcoming' },
+  ongoing:   { bg: '#f0fdf4', color: '#15803d', label: 'Ongoing' },
+  completed: { bg: '#f8fafc', color: '#64748b', label: 'Completed' },
+  cancelled: { bg: '#fef2f2', color: '#dc2626', label: 'Cancelled' },
+};
+
+const ACTIVE_STATUSES   = ['upcoming', 'ongoing'];
+const HISTORY_STATUSES  = ['completed', 'cancelled'];
+
 const TravelCard = ({ travel, onRefresh, activeDirectorId }) => {
   const { isAdmin } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const upcoming = travel.filter(t => t.status === 'upcoming').length;
+  const [showHistory, setShowHistory]   = useState(false);
+
+  const active  = travel.filter(t => ACTIVE_STATUSES.includes(t.status));
+  const history = travel.filter(t => HISTORY_STATUSES.includes(t.status));
+  const displayed = showHistory ? history : active;
 
   return (
     <>
       <DashboardCard
         icon="✈️"
         title="Travel Reminders"
-        badge={`${upcoming} upcoming`}
-        badgeColor={upcoming > 0 ? 'blue' : 'gray'}
-        onAdd={isAdmin ? () => setShowAddModal(true) : null}
+        badge={showHistory ? `${history.length} past` : `${active.length} upcoming`}
+        badgeColor={showHistory ? 'gray' : (active.length > 0 ? 'blue' : 'gray')}
+        onAdd={isAdmin && !showHistory ? () => setShowAddModal(true) : null}
         addLabel="Add Travel"
       >
-        {travel.length === 0 ? (
-          <EmptyState message="No upcoming travel" />
+        {/* Active / History toggle */}
+        <div className={styles.historyToggle}>
+          <button
+            className={`${styles.toggleBtn} ${!showHistory ? styles.toggleBtnActive : ''}`}
+            onClick={() => setShowHistory(false)}
+          >
+            Upcoming {active.length > 0 && <span className={styles.toggleCount}>{active.length}</span>}
+          </button>
+          <button
+            className={`${styles.toggleBtn} ${showHistory ? styles.toggleBtnActive : ''}`}
+            onClick={() => setShowHistory(true)}
+          >
+            History {history.length > 0 && <span className={styles.toggleCount}>{history.length}</span>}
+          </button>
+        </div>
+
+        {displayed.length === 0 ? (
+          <EmptyState message={showHistory ? 'No past travel' : 'No upcoming travel'} />
         ) : (
           <div className={styles.list}>
-            {travel.map(t => (
-              <div
-                key={t.id}
-                className={`${styles.item} ${styles.itemClickable}`}
-                onClick={() => setSelectedItem(t)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && setSelectedItem(t)}
-                title="Click to view details"
-              >
-                <div className={styles.itemLeft}>
-                  <div className={styles.travelFlag}>✈️</div>
-                  <div>
-                    <div className={styles.itemTitle}>{t.destination}</div>
-                    {t.purpose && <div className={styles.itemSub}>{t.purpose}</div>}
-                    <div className={styles.itemSub}>
-                      {new Date(t.departureDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                      {t.returnDate && ` → ${new Date(t.returnDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}
+            {displayed.map(t => {
+              const ss = STATUS_STYLES[t.status] || STATUS_STYLES.upcoming;
+              return (
+                <div
+                  key={t.id}
+                  className={`${styles.item} ${styles.itemClickable} ${HISTORY_STATUSES.includes(t.status) ? styles.itemDone : ''}`}
+                  onClick={() => setSelectedItem(t)}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => e.key === 'Enter' && setSelectedItem(t)}
+                >
+                  <div className={styles.itemLeft}>
+                    <div className={styles.travelFlag}>✈️</div>
+                    <div>
+                      <div className={styles.itemTitle} style={{ opacity: HISTORY_STATUSES.includes(t.status) ? 0.7 : 1 }}>
+                        {t.destination}
+                      </div>
+                      {t.purpose && <div className={styles.itemSub}>{t.purpose}</div>}
+                      <div className={styles.itemSub}>
+                        {new Date(t.departureDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        {t.returnDate && ` → ${new Date(t.returnDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}
+                      </div>
                     </div>
                   </div>
+                  <span className={styles.statusPill} style={{ background: ss.bg, color: ss.color }}>
+                    {ss.label}
+                  </span>
                 </div>
-                <span className={styles.statusBadge}>{t.status}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </DashboardCard>
@@ -61,7 +96,6 @@ const TravelCard = ({ travel, onRefresh, activeDirectorId }) => {
           onSuccess={() => { setShowAddModal(false); onRefresh(); }}
         />
       )}
-
       {selectedItem && (
         <ItemDetailModal
           item={selectedItem}

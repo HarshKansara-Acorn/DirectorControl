@@ -124,3 +124,93 @@
   background: #eff6ff;
   border-color: #3b82f6;
 }
+
+/* ── Active / History toggle ── */
+.historyToggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.toggleBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.toggleBtn:hover { color: var(--text-primary); }
+
+.toggleBtnActive {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggleCount {
+  background: #1e40af;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ── Status pill (replaces old statusBadge for multi-status) ── */
+.statusPill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: capitalize;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Done / history item styling ── */
+.itemDone {
+  opacity: 0.75;
+}
+
+/* ── Resolved row (approval action date) ── */
+.resolvedRow {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.remarks {
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── History loading ── */
+.historyLoading {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 16px;
+  font-style: italic;
+}
