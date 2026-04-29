@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import DashboardCard from './DashboardCard';
 import EmptyState from './EmptyState';
 import AddApprovalModal from '../modals/AddApprovalModal';
+import EditApprovalModal from '../modals/EditApprovalModal';
 import ItemDetailModal from './ItemDetailModal';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -10,6 +11,7 @@ import styles from './CardItems.module.css';
 const ApprovalsCard = ({ approvals, onRefresh, activeDirectorId }) => {
   const { isAdmin } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editItem, setEditItem]         = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const pending = approvals.filter(a => a.status === 'pending');
 
@@ -58,7 +60,18 @@ const ApprovalsCard = ({ approvals, onRefresh, activeDirectorId }) => {
                       </div>
                     )}
                   </div>
-                  <span className={styles.priorityBadge}>{a.priority}</span>
+                  <div className={styles.itemActions} onClick={e => e.stopPropagation()}>
+                    {isAdmin && (
+                      <button
+                        className={styles.editIconBtn}
+                        onClick={() => setEditItem(a)}
+                        title="Edit approval"
+                      >
+                        ✏️
+                      </button>
+                    )}
+                    <span className={styles.priorityBadge}>{a.priority}</span>
+                  </div>
                 </div>
                 <div className={styles.approvalActions} onClick={e => e.stopPropagation()}>
                   <button className={styles.approveBtn} onClick={() => handleAction(a.id, 'approved')}>
@@ -82,12 +95,21 @@ const ApprovalsCard = ({ approvals, onRefresh, activeDirectorId }) => {
         />
       )}
 
-      {selectedItem && (
+      {editItem && (
+        <EditApprovalModal
+          approval={editItem}
+          onClose={() => setEditItem(null)}
+          onSuccess={() => { setEditItem(null); onRefresh(); }}
+        />
+      )}
+
+      {selectedItem && !editItem && (
         <ItemDetailModal
           item={selectedItem}
           type="approval"
           onClose={() => setSelectedItem(null)}
           onAction={handleAction}
+          onEdit={isAdmin ? () => { setEditItem(selectedItem); setSelectedItem(null); } : null}
         />
       )}
     </>

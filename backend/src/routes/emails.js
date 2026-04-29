@@ -63,6 +63,29 @@ router.patch('/:id/read', authenticateToken, async (req, res) => {
   }
 });
 
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const { subject, from, fromName, preview, priority } = req.body;
+  if (!subject) return res.status(400).json({ message: 'Subject is required' });
+  try {
+    await execute(
+      'UPDATE DC_UrgentEmails SET Subject=@subject,FromEmail=@from,FromName=@fromName,Preview=@preview,Priority=@priority WHERE Id=@id',
+      {
+        id:       { type: sql.NVarChar, value: req.params.id },
+        subject:  { type: sql.NVarChar, value: subject },
+        from:     { type: sql.NVarChar, value: from || '' },
+        fromName: { type: sql.NVarChar, value: fromName || '' },
+        preview:  { type: sql.NVarChar, value: preview || '' },
+        priority: { type: sql.NVarChar, value: priority || 'urgent' },
+      }
+    );
+    const updated = await queryOne('SELECT * FROM DC_UrgentEmails WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    if (!updated) return res.status(404).json({ message: 'Email not found' });
+    res.json(mapEmail(updated));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update email' });
+  }
+});
+
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     await execute('DELETE FROM DC_UrgentEmails WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });

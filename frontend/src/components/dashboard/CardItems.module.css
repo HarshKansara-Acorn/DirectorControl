@@ -97,3 +97,30 @@
   color: var(--text-disabled);
   flex-shrink: 0;
 }
+
+/* ── Item actions (edit button) ── */
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.editIconBtn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.editIconBtn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}

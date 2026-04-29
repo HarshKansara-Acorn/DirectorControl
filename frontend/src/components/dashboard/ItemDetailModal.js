@@ -226,7 +226,7 @@ const TravelDetail = ({ item }) => {
 };
 
 // ── Main modal ────────────────────────────────────────────────────────────────
-const ItemDetailModal = ({ item, type, onClose, onAction }) => {
+const ItemDetailModal = ({ item, type, onClose, onAction, onEdit }) => {
   const overlayRef = useRef(null);
 
   // Close on Escape
@@ -250,6 +250,9 @@ const ItemDetailModal = ({ item, type, onClose, onAction }) => {
     }
   };
 
+  // Show edit footer for types that support editing (not meetings/travel from detail)
+  const showEditFooter = onEdit && ['reminder', 'approval', 'email'].includes(type);
+
   return (
     <div className={styles.overlay} ref={overlayRef} onClick={handleOverlayClick}>
       <div className={styles.modal} role="dialog" aria-modal="true">
@@ -257,6 +260,13 @@ const ItemDetailModal = ({ item, type, onClose, onAction }) => {
           <X size={16} />
         </button>
         {renderContent()}
+        {showEditFooter && (
+          <div className={styles.editFooter}>
+            <button className={styles.editFooterBtn} onClick={onEdit}>
+              ✏️ Edit
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

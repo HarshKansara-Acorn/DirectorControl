@@ -99,6 +99,35 @@ router.post('/broadcast', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const { type, title, description, fromName, fromEmail, priority, dueDate, dueTime } = req.body;
+  if (!title) return res.status(400).json({ message: 'Title is required' });
+  try {
+    await execute(
+      `UPDATE DC_Approvals SET Type=@type,Title=@title,Description=@desc,
+       FromName=@fromName,FromEmail=@fromEmail,Priority=@priority,
+       DueDate=@dueDate,DueTime=@dueTime WHERE Id=@id`,
+      {
+        id:        { type: sql.NVarChar, value: req.params.id },
+        type:      { type: sql.NVarChar, value: type || 'general' },
+        title:     { type: sql.NVarChar, value: title },
+        desc:      { type: sql.NVarChar, value: description || '' },
+        fromName:  { type: sql.NVarChar, value: fromName || '' },
+        fromEmail: { type: sql.NVarChar, value: fromEmail || '' },
+        priority:  { type: sql.NVarChar, value: priority || 'normal' },
+        dueDate:   { type: sql.Date,     value: dueDate ? new Date(dueDate) : null },
+        dueTime:   { type: sql.NVarChar, value: dueTime || null },
+      }
+    );
+    const updated = await queryOne('SELECT * FROM DC_Approvals WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.id } });
+    if (!updated) return res.status(404).json({ message: 'Approval not found' });
+    res.json(mapApproval(updated));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Failed to update approval' });
+  }
+});
+
 router.patch('/:id/action', authenticateToken, async (req, res) => {
   const { action, remarks } = req.body;
   try {
