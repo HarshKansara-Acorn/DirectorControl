@@ -45,8 +45,9 @@ app.use('/api/travel',    require('./routes/travel'));
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/bills',     require('./routes/bills'));
 app.use('/api/assets',    require('./routes/assets'));
-app.use('/api/events',    require('./routes/events'));
-app.use('/api/teams',     require('./routes/teams'));
+app.use('/api/events',      require('./routes/events'));
+app.use('/api/teams',       require('./routes/teams'));
+app.use('/api/family-tree', require('./routes/familyTree'));
 
 // Health check — tests live DB connection
 app.get('/api/health', async (req, res) => {

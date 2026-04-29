@@ -1,0 +1,183 @@
+.page { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Header ── */
+.header { display: flex; align-items: center; justify-content: space-between; }
+.title { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.headerActions { display: flex; align-items: center; gap: 10px; }
+
+.filterSelect {
+  padding: 8px 12px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 13px; color: var(--text-primary);
+  background: var(--bg-surface); cursor: pointer; outline: none; font-family: inherit;
+}
+
+.templateBtn, .importBtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: var(--bg-muted);
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.templateBtn:hover, .importBtn:hover { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+.addBtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: white; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+
+.hiddenInput { display: none; }
+
+.importError {
+  padding: 10px 14px; background: #fef2f2; color: #dc2626;
+  border: 1px solid #fecaca; border-radius: 8px; font-size: 13px;
+}
+
+/* ── Empty state ── */
+.emptyState {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 60px 20px; text-align: center;
+}
+.emptyIcon { color: var(--text-disabled); }
+.emptyTitle { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.emptyText { font-size: 14px; color: var(--text-muted); margin: 0; max-width: 400px; }
+.emptyActions { display: flex; gap: 10px; margin-top: 8px; }
+
+/* ── Groups ── */
+.groups { display: flex; flex-direction: column; gap: 24px; }
+
+.group { display: flex; flex-direction: column; gap: 12px; }
+
+.groupHeader {
+  display: flex; align-items: center; gap: 8px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--border-subtle);
+}
+.groupEmoji { font-size: 20px; }
+.groupLabel { font-size: 15px; font-weight: 700; }
+.groupCount {
+  padding: 2px 10px; border-radius: 12px;
+  font-size: 12px; font-weight: 700;
+}
+
+/* ── Card grid ── */
+.cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+.card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 12px; overflow: hidden; transition: box-shadow 0.15s;
+}
+.card:hover { box-shadow: var(--card-shadow); }
+
+.cardPhoto { position: relative; }
+
+.cardPhotoImg {
+  width: 100%; height: 180px; object-fit: cover;
+  display: block; background: var(--bg-subtle);
+}
+
+.cardPhotoPlaceholder {
+  width: 100%; height: 180px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.cardBody { padding: 14px 16px; }
+
+.cardName { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 6px; }
+
+.relBadge {
+  display: inline-block; padding: 3px 10px; border-radius: 10px;
+  font-size: 11px; font-weight: 700; margin-bottom: 10px;
+}
+
+.cardMeta { display: flex; flex-direction: column; gap: 6px; }
+
+.metaRow {
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+}
+.metaLabel { flex-shrink: 0; }
+.metaEmail { word-break: break-all; }
+.metaNotes { font-style: italic; color: var(--text-muted); }
+.age { color: var(--text-muted); font-size: 11px; }
+
+.cardActions {
+  display: flex; gap: 8px; padding: 10px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.editBtn, .deleteBtn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+
+.editBtn {
+  background: var(--bg-muted); border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+}
+.editBtn:hover { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+.deleteBtn {
+  background: var(--red-bg); border: 1.5px solid var(--red-border);
+  color: var(--red-text);
+}
+.deleteBtn:hover { filter: brightness(0.95); }
+
+/* ── Photo upload overlay ── */
+.photoUpload { position: absolute; inset: 0; }
+
+.photoPreview { position: relative; width: 100%; height: 100%; }
+
+.photoOverlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.5); opacity: 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity 0.15s;
+}
+.photoPreview:hover .photoOverlay { opacity: 1; }
+
+.photoChangeBtn, .photoRemoveBtn {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 8px; cursor: pointer;
+  transition: all 0.15s;
+}
+.photoChangeBtn { background: #eff6ff; color: #1e40af; }
+.photoChangeBtn:hover { background: #dbeafe; }
+.photoRemoveBtn { background: #fef2f2; color: #dc2626; }
+.photoRemoveBtn:hover { background: #fee2e2; }
+
+.photoPlaceholder {
+  width: 100%; height: 180px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: var(--bg-subtle); border: 2px dashed var(--border);
+  cursor: pointer; font-size: 13px; color: var(--text-muted);
+  font-family: inherit; transition: all 0.15s;
+}
+.photoPlaceholder:hover { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+.photoPlaceholder:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.photoError { font-size: 11px; color: #dc2626; margin: 4px 0 0; }
+
+/* ── Import table ── */
+.importTable {
+  max-height: 300px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.importTable table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.importTable th {
+  background: var(--bg-subtle); padding: 8px 10px;
+  text-align: left; font-weight: 600; color: var(--text-primary);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0;
+}
+.importTable td { padding: 8px 10px; border-bottom: 1px solid var(--border-subtle); }
+
+/* ── Skeleton ── */
+.skeletonGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.skeletonCard {
+  height: 320px; background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-to) 50%, var(--skeleton-from) 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }

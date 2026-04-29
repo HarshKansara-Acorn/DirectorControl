@@ -16,6 +16,7 @@ import Documents from './pages/Documents';
 import Bills from './pages/Bills';
 import Assets from './pages/Assets';
 import Events from './pages/Events';
+import FamilyTree from './pages/FamilyTree';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import DirectorDashboard from './pages/director/DirectorDashboard';
@@ -52,8 +53,9 @@ function App() {
                 <Route path="documents" element={<Documents />} />
                 <Route path="bills" element={<Bills />} />
                 <Route path="assets" element={<Assets />} />
-                <Route path="events" element={<Events />} />
-                <Route path="profile" element={<Profile />} />
+                <Route path="events"       element={<Events />} />
+                <Route path="family-tree"  element={<FamilyTree />} />
+                <Route path="profile"      element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 

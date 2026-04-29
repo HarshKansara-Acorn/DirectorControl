@@ -6,7 +6,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import {
   LayoutDashboard, CheckSquare, Bell, Search,
   Settings, LogOut, ChevronDown, User,
-  Plane, FileText, Receipt, Package, Calendar
+  Plane, FileText, Receipt, Package, Calendar, Users
 } from 'lucide-react';
 import NotificationPanel from './NotificationPanel';
 import SearchPanel from './SearchPanel';
@@ -16,13 +16,14 @@ import api from '../../services/api';
 import styles from './DashboardLayout.module.css';
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { path: '/travel', label: 'Travel', icon: Plane },
-  { path: '/documents', label: 'Documents', icon: FileText },
-  { path: '/bills', label: 'Bills', icon: Receipt },
-  { path: '/assets', label: 'Assets', icon: Package },
-  { path: '/events', label: 'Events', icon: Calendar },
+  { path: '/dashboard',    label: 'Dashboard',   icon: LayoutDashboard },
+  { path: '/tasks',        label: 'Tasks',        icon: CheckSquare },
+  { path: '/travel',       label: 'Travel',       icon: Plane },
+  { path: '/documents',    label: 'Documents',    icon: FileText },
+  { path: '/bills',        label: 'Bills',        icon: Receipt },
+  { path: '/assets',       label: 'Assets',       icon: Package },
+  { path: '/events',       label: 'Events',       icon: Calendar },
+  { path: '/family-tree',  label: 'Family Tree',  icon: Users },
 ];
 
 const DashboardLayout = () => {
