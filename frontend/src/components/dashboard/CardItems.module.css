@@ -67,3 +67,33 @@
   background: var(--indigo-bg); color: var(--indigo-text);
   border-radius: 10px; text-transform: capitalize; flex-shrink: 0;
 }
+
+/* ── Clickable items ── */
+.itemClickable {
+  cursor: pointer;
+}
+
+.itemClickable:hover {
+  background: var(--bg-active) !important;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.approvalItemClickable {
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.approvalItemClickable:hover {
+  background: var(--bg-active);
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.chevron {
+  font-size: 18px;
+  color: var(--text-disabled);
+  flex-shrink: 0;
+}

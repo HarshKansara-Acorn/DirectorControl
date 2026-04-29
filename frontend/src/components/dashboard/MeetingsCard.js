@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import DashboardCard from './DashboardCard';
 import EmptyState from './EmptyState';
 import AddMeetingModal from '../modals/AddMeetingModal';
+import ItemDetailModal from './ItemDetailModal';
 import { useAuth } from '../../context/AuthContext';
 import styles from './CardItems.module.css';
 
 const MeetingsCard = ({ meetings, onRefresh, activeDirectorId }) => {
   const { isAdmin } = useAuth();
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   return (
     <>
@@ -16,7 +18,7 @@ const MeetingsCard = ({ meetings, onRefresh, activeDirectorId }) => {
         title="Today's Meetings"
         badge={`${meetings.length} today`}
         badgeColor={meetings.length > 0 ? 'blue' : 'gray'}
-        onAdd={isAdmin ? () => setShowModal(true) : null}
+        onAdd={isAdmin ? () => setShowAddModal(true) : null}
         addLabel="Add Meeting"
       >
         {meetings.length === 0 ? (
@@ -24,12 +26,24 @@ const MeetingsCard = ({ meetings, onRefresh, activeDirectorId }) => {
         ) : (
           <div className={styles.list}>
             {meetings.map(m => (
-              <div key={m.id} className={styles.item}>
+              <div
+                key={m.id}
+                className={`${styles.item} ${styles.itemClickable}`}
+                onClick={() => setSelectedItem(m)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && setSelectedItem(m)}
+                title="Click to view details"
+              >
                 <div className={styles.itemLeft}>
                   <div className={styles.timeTag}>{m.time}</div>
                   <div>
                     <div className={styles.itemTitle}>
-                      {m.isShared && <span style={{ fontSize: 10, background: '#eff6ff', color: '#1e40af', padding: '1px 5px', borderRadius: 6, marginRight: 5, fontWeight: 700 }}>👥 All</span>}
+                      {m.isShared && (
+                        <span style={{ fontSize: 10, background: '#eff6ff', color: '#1e40af', padding: '1px 5px', borderRadius: 6, marginRight: 5, fontWeight: 700 }}>
+                          👥 All
+                        </span>
+                      )}
                       {m.title}
                     </div>
                     <div className={styles.itemSub}>{m.location || 'No location'}</div>
@@ -42,11 +56,19 @@ const MeetingsCard = ({ meetings, onRefresh, activeDirectorId }) => {
         )}
       </DashboardCard>
 
-      {showModal && (
+      {showAddModal && (
         <AddMeetingModal
           directorId={activeDirectorId}
-          onClose={() => setShowModal(false)}
-          onSuccess={() => { setShowModal(false); onRefresh(); }}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => { setShowAddModal(false); onRefresh(); }}
+        />
+      )}
+
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          type="meeting"
+          onClose={() => setSelectedItem(null)}
         />
       )}
     </>
