@@ -81,26 +81,15 @@ app.listen(PORT, async () => {
     const migrateProfile = require('./config/migrateProfile');
     await migrateProfile();
 
-    // Auto-reset passwords to correct values on every startup
-    const bcrypt = require('bcryptjs');
-    const { execute, query, sql } = require('./config/db');
-    const adminHash    = await bcrypt.hash('Admin@123', 10);
-    const directorHash = await bcrypt.hash('Director@123', 10);
-    await execute("UPDATE DC_Users SET Password=@h WHERE Role='admin'",    { h: { type: sql.NVarChar, value: adminHash } });
-    await execute("UPDATE DC_Users SET Password=@h WHERE Role='director'", { h: { type: sql.NVarChar, value: directorHash } });
-    console.log('✅ Passwords synced — PA: Admin@123 | Directors: Director@123');
-
     // Sync real user names and emails — runs on every startup, updates only what changed
+    const { execute, query, sql } = require('./config/db');
     const users = await query('SELECT Id, Email, Name FROM DC_Users');
     const nameMap = {
-      // old email → new details (handles both old and new email in case already migrated)
-      'harsh.kansara@acornuniversalconsultancy.com':  { name: 'Chintan Patel',  first: 'Chintan', last: 'Patel',    avatar: 'CP', newEmail: 'chintan.patel@acornuniversalconsultancy.com'  },
       'chintan.patel@acornuniversalconsultancy.com':  { name: 'Chintan Patel',  first: 'Chintan', last: 'Patel',    avatar: 'CP', newEmail: null },
-      'director1@acornuniversalconsultancy.com':      { name: 'Dhruval Patel',  first: 'Dhruval', last: 'Patel',    avatar: 'DP', newEmail: 'dhruval.patel@acornuniversalconsultancy.com'  },
+      'tanvi.laddha@acornuniversalconsultancy.com':   { name: 'Tanvi Laddha',   first: 'Tanvi',   last: 'Laddha',   avatar: 'TL', newEmail: null },
+      'harsh.kansara@acornuniversalconsultancy.com':  { name: 'Harsh Kansara',  first: 'Harsh',   last: 'Kansara',  avatar: 'HK', newEmail: null },
       'dhruval.patel@acornuniversalconsultancy.com':  { name: 'Dhruval Patel',  first: 'Dhruval', last: 'Patel',    avatar: 'DP', newEmail: null },
-      'director2@acornuniversalconsultancy.com':      { name: 'Gaumish Patel',  first: 'Gaumish', last: 'Patel',    avatar: 'GP', newEmail: 'gaumish.patel@acornuniversalconsultancy.com'  },
       'gaumish.patel@acornuniversalconsultancy.com':  { name: 'Gaumish Patel',  first: 'Gaumish', last: 'Patel',    avatar: 'GP', newEmail: null },
-      'director3@acornuniversalconsultancy.com':      { name: 'Umesh Savaliya', first: 'Umesh',   last: 'Savaliya', avatar: 'US', newEmail: 'umesh.savaliya@acornuniversalconsultancy.com' },
       'umesh.savaliya@acornuniversalconsultancy.com': { name: 'Umesh Savaliya', first: 'Umesh',   last: 'Savaliya', avatar: 'US', newEmail: null },
     };
     for (const u of users) {
@@ -124,7 +113,7 @@ app.listen(PORT, async () => {
         );
       }
     }
-    console.log('✅ User names & emails synced — Chintan Patel, Dhruval Patel, Gaumish Patel, Umesh Savaliya');
+    console.log('✅ User names & emails synced');
   } catch (err) {
     console.error('Startup error:', err.message);
   }
