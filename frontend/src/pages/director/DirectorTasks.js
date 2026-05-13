@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import AddTaskModal from '../../components/modals/AddTaskModal';
 import TaskDetailModal from '../../components/modals/TaskDetailModal';
+import InlineTaskChat from '../../components/tasks/InlineTaskChat';
 import styles from './DirectorTasks.module.css';
 
 const COLUMNS = [
@@ -24,15 +25,22 @@ const DirectorTasks = () => {
   const [tasks, setTasks]               = useState([]);
   const [loading, setLoading]           = useState(true);
   const [filterPriority, setFilter]     = useState('all');
-  const [filterDirection, setFilterDir] = useState('all'); // all | from-pa | from-me
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [filterDirection, setFilterDir] = useState('all');
+  const [detailTask, setDetailTask]     = useState(null);   // opens modal for status/details
+  const [openChatId, setOpenChatId]     = useState(null);   // which card has chat expanded
   const [showAddModal, setShowAddModal] = useState(false);
+  // Track live comment counts per task (updated by InlineTaskChat)
+  const [commentCounts, setCommentCounts] = useState({});
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/tasks');
       setTasks(res.data);
+      // Seed comment counts from task data
+      const counts = {};
+      res.data.forEach(t => { counts[t.id] = t.commentCount || 0; });
+      setCommentCounts(counts);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, []);
@@ -49,6 +57,11 @@ const DirectorTasks = () => {
     } catch { fetchTasks(); }
   };
 
+  const toggleChat = (taskId, e) => {
+    e.stopPropagation();
+    setOpenChatId(prev => prev === taskId ? null : taskId);
+  };
+
   const filtered = tasks.filter(t => {
     const priorityOk = filterPriority === 'all' || t.priority === filterPriority;
     let directionOk = true;
@@ -58,7 +71,7 @@ const DirectorTasks = () => {
   });
 
   const today = new Date().toISOString().split('T')[0];
-  const done = tasks.filter(t => t.status === 'done').length;
+  const done   = tasks.filter(t => t.status === 'done').length;
   const fromPA = tasks.filter(t => t.createdByRole === 'admin').length;
   const fromMe = tasks.filter(t => t.createdBy === user?.id).length;
 
@@ -74,22 +87,12 @@ const DirectorTasks = () => {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <select
-            className={styles.filterSelect}
-            value={filterDirection}
-            onChange={e => setFilterDir(e.target.value)}
-            aria-label="Filter by direction"
-          >
+          <select className={styles.filterSelect} value={filterDirection} onChange={e => setFilterDir(e.target.value)}>
             <option value="all">All Tasks</option>
             <option value="from-pa">From PA</option>
             <option value="from-me">Sent to PA</option>
           </select>
-          <select
-            className={styles.filterSelect}
-            value={filterPriority}
-            onChange={e => setFilter(e.target.value)}
-            aria-label="Filter by priority"
-          >
+          <select className={styles.filterSelect} value={filterPriority} onChange={e => setFilter(e.target.value)}>
             <option value="all">All Priorities</option>
             <option value="high">🔴 High</option>
             <option value="medium">🟡 Medium</option>
@@ -132,11 +135,13 @@ const DirectorTasks = () => {
                         {colTasks.length === 0 && !snapshot.isDraggingOver && (
                           <div className={styles.emptyCol}>No tasks</div>
                         )}
+
                         {colTasks.map((task, idx) => {
                           const p = PRIORITY[task.priority] || PRIORITY.medium;
                           const isOverdue = task.dueDate && task.dueDate < today && task.status !== 'done';
                           const isFromPA  = task.createdByRole === 'admin';
-                          const isFromMe  = task.createdBy === user?.id;
+                          const chatOpen  = openChatId === task.id;
+                          const msgCount  = commentCounts[task.id] ?? task.commentCount ?? 0;
 
                           return (
                             <Draggable key={task.id} draggableId={task.id} index={idx}>
@@ -144,43 +149,75 @@ const DirectorTasks = () => {
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`${styles.taskCard} ${snapshot.isDragging ? styles.dragging : ''} ${isOverdue ? styles.taskCardOverdue : ''}`}
-                                  onClick={() => setSelectedTask(task)}
+                                  className={`${styles.taskCard} ${snapshot.isDragging ? styles.dragging : ''} ${isOverdue ? styles.taskCardOverdue : ''} ${chatOpen ? styles.taskCardOpen : ''}`}
                                 >
-                                  <div className={styles.taskBar} style={{ background: p.color }} />
-                                  <div className={styles.taskBody}>
-                                    {isOverdue && <span className={styles.overdueChip}>Overdue</span>}
-                                    <div className={styles.taskTitle}>{task.title}</div>
-                                    {task.description && (
-                                      <div className={styles.taskDesc}>{task.description}</div>
-                                    )}
-                                    {task.tags?.length > 0 && (
-                                      <div className={styles.tags}>
-                                        {task.tags.map(tag => <span key={tag} className={styles.tag}>{tag}</span>)}
-                                      </div>
-                                    )}
-                                    <div className={styles.taskMeta}>
-                                      <span className={styles.priorityChip} style={{ background: p.bg, color: p.color }}>
-                                        {p.label}
-                                      </span>
-                                      {task.dueDate && (
-                                        <span className={`${styles.dueDate} ${isOverdue ? styles.dueDateOverdue : ''}`}>
-                                          📅 {new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                  {/* ── Drag handle = task body ── */}
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className={styles.taskDragArea}
+                                  >
+                                    <div className={styles.taskBar} style={{ background: p.color }} />
+                                    <div className={styles.taskBody}>
+                                      {isOverdue && <span className={styles.overdueChip}>Overdue</span>}
+                                      <div className={styles.taskTitle}>{task.title}</div>
+                                      {task.description && (
+                                        <div className={styles.taskDesc}>{task.description}</div>
+                                      )}
+                                      {task.tags?.length > 0 && (
+                                        <div className={styles.tags}>
+                                          {task.tags.map(tag => <span key={tag} className={styles.tag}>{tag}</span>)}
+                                        </div>
+                                      )}
+                                      <div className={styles.taskMeta}>
+                                        <span className={styles.priorityChip} style={{ background: p.bg, color: p.color }}>
+                                          {p.label}
                                         </span>
-                                      )}
-                                    </div>
-                                    {/* Direction indicator */}
-                                    <div className={styles.taskDirection}>
-                                      {isFromPA
-                                        ? <span className={styles.dirFromPA}>↓ from PA</span>
-                                        : <span className={styles.dirToPA}>↑ sent to PA</span>
-                                      }
-                                      {task.commentCount > 0 && (
-                                        <span className={styles.commentCount}>💬 {task.commentCount}</span>
-                                      )}
+                                        {task.dueDate && (
+                                          <span className={`${styles.dueDate} ${isOverdue ? styles.dueDateOverdue : ''}`}>
+                                            📅 {new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* ── Footer: direction + action buttons ── */}
+                                      <div className={styles.taskFooter}>
+                                        <div className={styles.taskDirection}>
+                                          {isFromPA
+                                            ? <span className={styles.dirFromPA}>↓ from PA</span>
+                                            : <span className={styles.dirToPA}>↑ sent to PA</span>
+                                          }
+                                        </div>
+                                        <div className={styles.taskActions}>
+                                          {/* Chat toggle */}
+                                          <button
+                                            className={`${styles.chatBtn} ${chatOpen ? styles.chatBtnActive : ''}`}
+                                            onClick={e => toggleChat(task.id, e)}
+                                            title={chatOpen ? 'Close chat' : 'Open chat'}
+                                          >
+                                            💬 {msgCount > 0 ? msgCount : ''}
+                                          </button>
+                                          {/* Details / status */}
+                                          <button
+                                            className={styles.detailBtn}
+                                            onClick={e => { e.stopPropagation(); setDetailTask(task); }}
+                                            title="View details & change status"
+                                          >
+                                            ⋯
+                                          </button>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+
+                                  {/* ── Inline chat panel ── */}
+                                  {chatOpen && (
+                                    <InlineTaskChat
+                                      taskId={task.id}
+                                      onCommentCountChange={count =>
+                                        setCommentCounts(prev => ({ ...prev, [task.id]: count }))
+                                      }
+                                    />
+                                  )}
                                 </div>
                               )}
                             </Draggable>
@@ -197,7 +234,6 @@ const DirectorTasks = () => {
         </DragDropContext>
       )}
 
-      {/* Add task modal — director sends to PA */}
       {showAddModal && (
         <AddTaskModal
           onClose={() => setShowAddModal(false)}
@@ -205,12 +241,12 @@ const DirectorTasks = () => {
         />
       )}
 
-      {/* Task detail with comments */}
-      {selectedTask && (
+      {/* Modal only for details/status — not for chat */}
+      {detailTask && (
         <TaskDetailModal
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onUpdate={() => { setSelectedTask(null); fetchTasks(); }}
+          task={detailTask}
+          onClose={() => setDetailTask(null)}
+          onUpdate={() => { setDetailTask(null); fetchTasks(); }}
         />
       )}
     </div>
