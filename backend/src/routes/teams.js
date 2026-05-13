@@ -232,8 +232,33 @@ router.get('/presence', authenticateToken, async (req, res) => {
 });
 
 /**
- * POST /api/teams/sync
- * Sync Outlook calendar events into DC_Events for a director.
+ * GET /api/teams/unread-mail
+ * Returns unread emails from the user's Outlook inbox.
+ * Falls back to admin's token if user has no token (same pattern as sync).
+ */
+router.get('/unread-mail', authenticateToken, async (req, res) => {
+  const targetId = req.query.userId || req.user.id;
+
+  // Token resolution: user's own token → admin's token → not connected
+  let tokenUserId = null;
+  if (await teamsService.isConnected(targetId)) {
+    tokenUserId = targetId;
+  } else if (req.user.role === 'admin' && await teamsService.isConnected(req.user.id)) {
+    tokenUserId = req.user.id;
+  }
+
+  if (!tokenUserId) {
+    return res.json({ connected: false, mails: [] });
+  }
+
+  try {
+    const mails = await teamsService.getUnreadMails(tokenUserId);
+    res.json({ connected: true, mails });
+  } catch (err) {
+    console.error('Unread mail error:', err.message);
+    res.json({ connected: true, mails: [] });
+  }
+});
  * Admin only.
  *
  * Token resolution order:

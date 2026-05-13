@@ -398,6 +398,33 @@ const getMailboxSettings = async (directorId) => {
 };
 
 /**
+ * Get unread emails from Outlook inbox (requires Mail.Read permission).
+ * Returns up to 20 most recent unread messages.
+ */
+const getUnreadMails = async (directorId) => {
+  try {
+    const data = await graphGet(directorId, '/me/mailFolders/inbox/messages', {
+      $filter: 'isRead eq false',
+      $select: 'id,subject,from,receivedDateTime,bodyPreview,importance,isRead',
+      $orderby: 'receivedDateTime desc',
+      $top: 20,
+    });
+    return (data.value || []).map(m => ({
+      id: m.id,
+      subject: m.subject || '(No subject)',
+      from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || 'Unknown',
+      fromEmail: m.from?.emailAddress?.address || '',
+      receivedAt: m.receivedDateTime,
+      preview: m.bodyPreview || '',
+      importance: m.importance || 'normal',
+      isRead: m.isRead || false,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+/**
  * Get unread chat message count and recent mentions.
  */
 const getChats = async (directorId) => {
@@ -472,6 +499,7 @@ module.exports = {
   getPresence,
   getMailboxSettings,
   getChats,
+  getUnreadMails,
   getUserProfile,
   getTeamsSummary,
   tokenStore,

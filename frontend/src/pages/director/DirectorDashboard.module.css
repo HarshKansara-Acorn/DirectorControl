@@ -1,167 +1,166 @@
 .page { display: flex; flex-direction: column; gap: 24px; }
 
-.header { display: flex; flex-direction: column; gap: 4px; }
+/* ── Header ── */
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .dateStr { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.8px; }
 .greeting { font-size: 28px; font-weight: 700; color: var(--text-primary); }
 .summary { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
 .summary strong { color: var(--brand-primary); font-weight: 600; }
 
-/* Stats Row */
-.statsRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.refreshBtn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 12px; background: var(--bg-muted);
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 11px; color: var(--text-muted); cursor: pointer;
+  font-family: inherit; transition: all 0.15s; flex-shrink: 0; margin-top: 4px;
+}
+.refreshBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.refreshBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.refreshBtnSpinning svg { animation: spin 0.8s linear infinite; }
+.refreshTime { font-size: 10px; color: var(--text-muted); }
 
-@media (max-width: 900px) { .statsRow { grid-template-columns: repeat(2, 1fr); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ── Stats Row — 6 columns ── */
+.statsRow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+
+@media (max-width: 1200px) { .statsRow { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .statsRow { grid-template-columns: repeat(2, 1fr); } }
 
 .statCard {
-  display: flex; align-items: center; gap: 12px;
-  padding: 16px 18px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
   background: var(--card-bg); border: 1px solid var(--card-border);
   border-radius: 12px; cursor: pointer; transition: all 0.15s;
 }
-
 .statCard:hover { box-shadow: var(--card-shadow); transform: translateY(-1px); }
-.statCardAlert { border-color: var(--red-border); box-shadow: 0 0 0 1px var(--red-border); }
-.statCardWarning { border-color: var(--orange-border); box-shadow: 0 0 0 1px var(--orange-border); }
+.statCardAlert  { border-color: var(--red-border);    box-shadow: 0 0 0 1px var(--red-border); }
+.statCardWarning{ border-color: var(--orange-border);  box-shadow: 0 0 0 1px var(--orange-border); }
+.statCardInfo   { border-color: #bbf7d0;               box-shadow: 0 0 0 1px #bbf7d0; }
+.statCardMail   { border-color: var(--red-border);     box-shadow: 0 0 0 1px var(--red-border); }
 
-.statIcon {
-  width: 44px; height: 44px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
+.statIcon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.statValue { font-size: 22px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.statLabel { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
-.statValue { font-size: 26px; font-weight: 700; color: var(--text-primary); line-height: 1; }
-.statLabel { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-
-/* Grid */
+/* ── Grid — 2 columns ── */
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
 @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
 
-/* Section */
+/* ── Section ── */
 .section {
   background: var(--card-bg); border: 1px solid var(--card-border);
   border-radius: 14px; overflow: hidden;
 }
-
 .sectionFull { grid-column: 1 / -1; }
 
 .sectionHeader {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid var(--border-subtle);
+  padding: 14px 18px; border-bottom: 1px solid var(--border-subtle);
 }
-
-.sectionTitle {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 15px; font-weight: 600; color: var(--text-primary);
-}
-
-.badge {
-  padding: 2px 9px; border-radius: 12px;
-  font-size: 11px; font-weight: 700;
-}
-
+.sectionTitle { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.badge { padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; }
 .viewAll {
   display: flex; align-items: center; gap: 4px;
-  padding: 5px 10px; background: var(--bg-subtle);
+  padding: 4px 10px; background: var(--bg-subtle);
   border: 1px solid var(--border); border-radius: 6px;
   font-size: 12px; font-weight: 500; color: var(--text-secondary);
   cursor: pointer; font-family: inherit; transition: all 0.15s;
 }
-
 .viewAll:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-/* Empty */
-.empty {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 32px; color: var(--text-muted); font-size: 13px;
+/* ── Empty ── */
+.empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px; color: var(--text-muted); font-size: 13px; }
+
+.connectBtn {
+  padding: 7px 16px; background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: white; border: none; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  margin-top: 4px;
 }
 
-/* Approval List */
-.approvalList { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+/* ── Meetings ── */
+.meetingList { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
 
-.approvalCard {
-  padding: 14px; background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle); border-radius: 10px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-
-.approvalInfo { flex: 1; }
-.approvalTitle { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
-.approvalMeta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--text-muted); }
-.approvalType { padding: 2px 7px; background: var(--bg-muted); border-radius: 8px; text-transform: capitalize; }
-.approvalDesc { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; }
-
-.approvalActions { display: flex; gap: 8px; }
-
-.approveBtn {
-  flex: 1; padding: 7px 14px;
-  background: var(--green-bg); border: 1.5px solid var(--green-border);
-  color: var(--green-text); border-radius: 7px;
-  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s;
-}
-
-.rejectBtn {
-  flex: 1; padding: 7px 14px;
-  background: var(--red-bg); border: 1.5px solid var(--red-border);
-  color: var(--red-text); border-radius: 7px;
-  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s;
-}
-
-/* Reminder List */
-.reminderList { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
-
-.reminderItem {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 12px; background: var(--bg-subtle);
+.meetingItem {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 12px; background: var(--bg-subtle);
   border: 1px solid var(--border-subtle); border-radius: 8px;
 }
 
+.meetingTime {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 52px; flex-shrink: 0;
+  padding: 6px 8px; background: #eff6ff; border-radius: 8px;
+  font-size: 12px; font-weight: 700; color: #1e40af; text-align: center;
+}
+.meetingDuration { font-size: 10px; font-weight: 500; color: #3b82f6; }
+
+.meetingInfo { flex: 1; min-width: 0; }
+.meetingTitle { font-size: 13px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.meetingLocation { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.sharedBadge { font-size: 10px; background: #eff6ff; color: #1e40af; padding: 1px 5px; border-radius: 6px; font-weight: 700; }
+
+/* ── Mails ── */
+.mailList { display: flex; flex-direction: column; gap: 0; padding: 8px 14px; }
+
+.mailItem {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border-subtle);
+}
+.mailItem:last-child { border-bottom: none; }
+
+.mailDot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+
+.mailInfo { flex: 1; min-width: 0; }
+.mailSubject { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mailMeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.mailFrom { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.mailTime { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+.mailPreview { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.importanceBadge {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+
+/* ── Approvals ── */
+.approvalList { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+.approvalCard { padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 10px; display: flex; flex-direction: column; gap: 10px; }
+.approvalInfo { flex: 1; }
+.approvalTitle { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.approvalMeta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: var(--text-muted); }
+.approvalType { padding: 2px 7px; background: var(--bg-muted); border-radius: 8px; text-transform: capitalize; }
+.approvalDesc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+.approvalActions { display: flex; gap: 8px; }
+.approveBtn { flex: 1; padding: 6px 12px; background: var(--green-bg); border: 1.5px solid var(--green-border); color: var(--green-text); border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.rejectBtn  { flex: 1; padding: 6px 12px; background: var(--red-bg);   border: 1.5px solid var(--red-border);   color: var(--red-text);   border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+/* ── Reminders ── */
+.reminderList { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+.reminderItem { display: flex; align-items: flex-start; gap: 10px; padding: 10px; background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; }
 .reminderDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
 .reminderContent { flex: 1; min-width: 0; }
 .reminderTitle { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .reminderDesc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
 .reminderDue { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 .reminderDueOverdue { color: var(--red-text); font-weight: 600; }
+.priorityBadge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; flex-shrink: 0; }
 
-.priorityBadge {
-  padding: 3px 10px; border-radius: 12px;
-  font-size: 11px; font-weight: 600; flex-shrink: 0;
-}
-
-/* Task Table */
-.taskTable { display: flex; flex-direction: column; padding: 16px; }
-
-.taskTableHead {
-  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 12px; padding: 8px 12px; margin-bottom: 6px;
-  font-size: 10px; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.6px;
-}
-
-.taskRow {
-  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 12px; align-items: center;
-  padding: 10px 12px; background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle); border-radius: 8px;
-  margin-bottom: 6px; transition: background 0.15s;
-}
-
+/* ── Task Table ── */
+.taskTable { display: flex; flex-direction: column; padding: 14px; }
+.taskTableHead { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; padding: 6px 12px; margin-bottom: 6px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.taskRow { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; align-items: center; padding: 9px 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 6px; transition: background 0.15s; }
 .taskRow:hover { background: var(--bg-hover); }
 .taskRowOverdue { border-left: 3px solid var(--red-text); }
-
-.taskTitle {
-  font-size: 13px; font-weight: 500; color: var(--text-primary);
-  display: flex; align-items: center; gap: 6px;
-}
-
-.overdueTag {
-  padding: 1px 6px; background: var(--red-bg); color: var(--red-text);
-  border-radius: 8px; font-size: 10px; font-weight: 700;
-}
-
+.taskTitle { font-size: 13px; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+.overdueTag { padding: 1px 6px; background: var(--red-bg); color: var(--red-text); border-radius: 8px; font-size: 10px; font-weight: 700; }
 .statusBadge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-align: center; }
 .dueDate { font-size: 12px; color: var(--text-secondary); text-align: right; }
 .dueDateOverdue { color: var(--red-text); font-weight: 600; }
 
-/* Skeleton */
+/* ── Skeleton ── */
 .skeletonHeader { height: 80px; background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-to) 50%, var(--skeleton-from) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
 .skeletonGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .skeletonCard { height: 200px; background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-to) 50%, var(--skeleton-from) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
