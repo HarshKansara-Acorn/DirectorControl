@@ -170,23 +170,26 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
       {/* ── Input ── */}
       <form className={styles.inputRow} onSubmit={handleSend}>
         <Avatar name={user?.name} role={user?.role} size={26} />
-        <input
-          ref={inputRef}
-          className={styles.input}
-          placeholder="Reply… (Enter to send)"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={sending}
-          maxLength={1000}
-        />
-        <button
-          type="submit"
-          className={styles.sendBtn}
-          disabled={sending || !text.trim()}
-        >
-          {sending ? '…' : '↑'}
-        </button>
+        <div className={styles.inputWrap}>
+          <input
+            ref={inputRef}
+            className={styles.input}
+            placeholder="Reply…"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={sending}
+            maxLength={1000}
+          />
+          <button
+            type="submit"
+            className={styles.sendBtn}
+            disabled={sending || !text.trim()}
+            title="Send (Enter)"
+          >
+            {sending ? '…' : '➤'}
+          </button>
+        </div>
       </form>
     </div>
   );

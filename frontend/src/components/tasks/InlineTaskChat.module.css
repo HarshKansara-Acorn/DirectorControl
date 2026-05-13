@@ -137,40 +137,56 @@
   border-top: 1px solid var(--border-subtle);
   background: var(--card-bg);
   border-radius: 0 0 10px 10px;
+  flex-shrink: 0;
+}
+
+/* Wrapper that holds input + send button together */
+.inputWrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
 .input {
-  flex: 1;
-  padding: 6px 10px;
+  width: 100%;
+  padding: 7px 38px 7px 10px; /* right padding leaves room for the button */
   border: 1.5px solid var(--input-border);
-  border-radius: 8px;
+  border-radius: 20px;        /* pill shape */
   font-size: 12px;
   color: var(--input-text);
   background: var(--input-bg);
   outline: none;
   font-family: inherit;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 
 .input:focus { border-color: #3b82f6; }
 .input:disabled { opacity: 0.6; }
 
+/* Send button sits inside the pill on the right */
 .sendBtn {
-  width: 30px;
-  height: 30px;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1e40af, #3b82f6);
   border: none;
-  border-radius: 8px;
+  border-radius: 50%;
   color: white;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 11px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
+  line-height: 1;
 }
 
-.sendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
-.sendBtn:not(:disabled):hover { opacity: 0.85; }
+.sendBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+.sendBtn:not(:disabled):hover { opacity: 0.85; transform: translateY(-50%) scale(1.1); }
