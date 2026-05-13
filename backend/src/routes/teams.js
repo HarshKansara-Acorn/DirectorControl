@@ -259,11 +259,9 @@ router.get('/unread-mail', authenticateToken, async (req, res) => {
     res.json({ connected: true, mails: [] });
   }
 });
- * Admin only.
- *
- * Token resolution order:
- *   1. Director's own Outlook token (if they connected themselves)
- *   2. The requesting admin's Outlook token (admin connected from their Settings)
+
+/**
+ * POST /api/teams/sync — Sync Outlook calendar into DC_Events. Admin only.
  */
 router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
   const { directorId } = req.body;
