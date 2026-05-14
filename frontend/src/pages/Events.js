@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDirector } from '../context/DirectorContext';
 import api from '../services/api';
 import Modal from '../components/modals/Modal';
 import FormField, { Input, Textarea, Select, FormActions } from '../components/modals/FormField';
-import { Calendar, MapPin, Users, Clock, Edit2, Trash2, Plus, RefreshCw } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Edit2, Trash2, Plus } from 'lucide-react';
 import DirectorSelector from '../components/modals/DirectorSelector';
 import FileUploadButton from '../components/common/FileUploadButton';
 import styles from './PageLayout.module.css';
@@ -38,8 +38,8 @@ const Events = () => {
   const [selectedDirectors, setSelectedDirectors] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [syncMsg, setSyncMsg] = useState('');
-  const [syncing, setSyncing] = useState(false);
+  const [lastSynced, setLastSynced] = useState(null);
+  const syncIntervalRef = useRef(null);
 
   const fetchEvents = useCallback(async () => {
     if (!activeDirectorId) return;
@@ -50,6 +50,28 @@ const Events = () => {
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, [activeDirectorId]);
+
+  // Auto-sync Outlook calendar silently, then refresh events
+  const autoSync = useCallback(async () => {
+    if (!activeDirectorId) return;
+    try {
+      await api.get('/teams/auto-sync', { params: { directorId: activeDirectorId } });
+      setLastSynced(new Date());
+      // Refresh events list after sync
+      const res = await api.get('/events', { params: { directorId: activeDirectorId } });
+      setEvents(res.data);
+    } catch {
+      // Silent — don't show errors for background sync
+    }
+  }, [activeDirectorId]);
+
+  // On mount: sync immediately then every 30 seconds
+  useEffect(() => {
+    if (!activeDirectorId) return;
+    autoSync(); // immediate sync on load
+    syncIntervalRef.current = setInterval(autoSync, 30000);
+    return () => clearInterval(syncIntervalRef.current);
+  }, [autoSync, activeDirectorId]);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
@@ -91,29 +113,6 @@ const Events = () => {
     catch (err) { console.error(err); }
   };
 
-  const handleOutlookSync = async () => {
-    if (!activeDirectorId) return;
-    setSyncing(true); setSyncMsg('');
-    try {
-      // Check connection — backend now falls back to admin's own token automatically
-      const statusRes = await api.get('/teams/status', { params: { userId: activeDirectorId } });
-      if (!statusRes.data.connected) {
-        setSyncMsg('❌ No Outlook account connected. Go to Settings → Linked Accounts to connect your Outlook.');
-        setSyncing(false);
-        return;
-      }
-      const res = await api.post('/teams/sync', { directorId: activeDirectorId });
-      const calendarUsed = res.data.calendarUsed ? ` (using ${res.data.calendarUsed})` : '';
-      setSyncMsg(`✅ ${res.data.message}${calendarUsed}`);
-      fetchEvents();
-    } catch (err) {
-      setSyncMsg(`❌ ${err.response?.data?.message || 'Sync failed'}`);
-    } finally {
-      setSyncing(false);
-      setTimeout(() => setSyncMsg(''), 6000);
-    }
-  };
-
   const filtered = events.filter(e => filterType === 'all' || e.type === filterType);
   const upcoming = events.filter(e => e.status === 'upcoming').length;
 
@@ -134,7 +133,14 @@ const Events = () => {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Events</h1>
-          <p className={styles.subtitle}>{selectedDirector?.name} — {upcoming} upcoming event{upcoming !== 1 ? 's' : ''}</p>
+          <p className={styles.subtitle}>
+            {selectedDirector?.name} — {upcoming} upcoming event{upcoming !== 1 ? 's' : ''}
+            {lastSynced && (
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 10 }}>
+                · Outlook synced {lastSynced.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </p>
         </div>
         <div className={styles.headerActions}>
           <select className={styles.filterSelect} value={filterType} onChange={e => setFilterType(e.target.value)} aria-label="Filter by type">
@@ -142,33 +148,12 @@ const Events = () => {
             {Object.entries(TYPE_STYLES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
           {isAdmin && (
-            <>
-              <button
-                className={styles.syncBtn}
-                onClick={handleOutlookSync}
-                disabled={syncing}
-                title="Sync Outlook Calendar"
-              >
-                <RefreshCw size={14} className={syncing ? styles.spinning : ''} />
-                {syncing ? 'Syncing...' : 'Sync Outlook'}
-              </button>
-              <button className={styles.addBtn} onClick={openAdd}><Plus size={15} /> Add Event</button>
-            </>
+            <button className={styles.addBtn} onClick={openAdd}><Plus size={15} /> Add Event</button>
           )}
         </div>
       </div>
 
-      {/* Sync message */}
-      {syncMsg && (
-        <div style={{
-          padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-          background: syncMsg.startsWith('✅') ? '#f0fdf4' : '#fef2f2',
-          color: syncMsg.startsWith('✅') ? '#15803d' : '#dc2626',
-          border: `1px solid ${syncMsg.startsWith('✅') ? '#bbf7d0' : '#fecaca'}`,
-        }}>
-          {syncMsg}
-        </div>
-      )}
+      {/* No sync message needed — auto-sync is silent */}
 
       {loading ? (
         <div className={styles.skeletonGrid}>{[...Array(3)].map((_, i) => <div key={i} className={styles.skeletonCard} />)}</div>

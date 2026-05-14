@@ -344,4 +344,108 @@ router.post('/sync', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/teams/auto-sync?directorId=xxx
+ * Pulls Outlook calendar events and upserts them into DC_Events.
+ * Any authenticated user can call this (not just admin).
+ * Used by the Events page to auto-sync every 30 seconds.
+ * Token resolution: director's own token → admin's token → skip silently.
+ */
+router.get('/auto-sync', authenticateToken, async (req, res) => {
+  const directorId = req.query.directorId || req.user.id;
+
+  // Resolve token
+  let tokenUserId = null;
+  if (await teamsService.isConnected(directorId)) {
+    tokenUserId = directorId;
+  } else if (req.user.role === 'admin' && await teamsService.isConnected(req.user.id)) {
+    tokenUserId = req.user.id;
+  }
+
+  // No token — return silently (not an error, just not connected)
+  if (!tokenUserId) {
+    return res.json({ synced: false, added: 0, updated: 0 });
+  }
+
+  try {
+    const calEvents = await teamsService.getCalendarEvents(tokenUserId, 90);
+    let added = 0;
+    let updated = 0;
+
+    for (const te of calEvents) {
+      if (!te.startDate) continue;
+
+      const existing = await query(
+        'SELECT Id FROM DC_Events WHERE TeamsId = @tid AND DirectorId = @did',
+        {
+          tid: { type: sql.NVarChar, value: te.id },
+          did: { type: sql.NVarChar, value: directorId },
+        }
+      );
+
+      if (existing.length > 0) {
+        // Update existing event in case title/time changed
+        await execute(
+          `UPDATE DC_Events SET
+            Title=@title, Description=@desc, StartDate=@sd, EndDate=@ed,
+            StartTime=@st, EndTime=@et, Location=@loc, IsAllDay=@allday,
+            JoinUrl=@jurl
+           WHERE TeamsId=@tid AND DirectorId=@did`,
+          {
+            title:  { type: sql.NVarChar, value: te.title },
+            desc:   { type: sql.NVarChar, value: te.description || '' },
+            sd:     { type: sql.Date,     value: new Date(te.startDate) },
+            ed:     { type: sql.Date,     value: new Date(te.endDate || te.startDate) },
+            st:     { type: sql.NVarChar, value: te.startTime || '' },
+            et:     { type: sql.NVarChar, value: te.endTime || '' },
+            loc:    { type: sql.NVarChar, value: te.location || '' },
+            allday: { type: sql.Bit,      value: te.isAllDay ? 1 : 0 },
+            jurl:   { type: sql.NVarChar, value: te.joinUrl || '' },
+            tid:    { type: sql.NVarChar, value: te.id },
+            did:    { type: sql.NVarChar, value: directorId },
+          }
+        );
+        updated++;
+      } else {
+        // Insert new event
+        await execute(
+          `INSERT INTO DC_Events
+            (Id, Title, Description, Type, DirectorId, StartDate, EndDate,
+             StartTime, EndTime, Location, Attendees, IsAllDay, Priority,
+             Status, Notes, TeamsId, JoinUrl, Source, CreatedBy, CreatedAt)
+           VALUES
+            (@id, @title, @desc, @type, @did, @sd, @ed,
+             @st, @et, @loc, @att, @allday, @pri,
+             'upcoming', '', @tid, @jurl, 'outlook', @cb, GETUTCDATE())`,
+          {
+            id:     { type: sql.NVarChar, value: uuidv4() },
+            title:  { type: sql.NVarChar, value: te.title },
+            desc:   { type: sql.NVarChar, value: te.description || '' },
+            type:   { type: sql.NVarChar, value: te.isOnlineMeeting ? 'online_meeting' : 'meeting' },
+            did:    { type: sql.NVarChar, value: directorId },
+            sd:     { type: sql.Date,     value: new Date(te.startDate) },
+            ed:     { type: sql.Date,     value: new Date(te.endDate || te.startDate) },
+            st:     { type: sql.NVarChar, value: te.startTime || '' },
+            et:     { type: sql.NVarChar, value: te.endTime || '' },
+            loc:    { type: sql.NVarChar, value: te.location || '' },
+            att:    { type: sql.NVarChar, value: (te.attendees || []).join(', ') },
+            allday: { type: sql.Bit,      value: te.isAllDay ? 1 : 0 },
+            pri:    { type: sql.NVarChar, value: te.importance === 'high' ? 'high' : 'medium' },
+            tid:    { type: sql.NVarChar, value: te.id },
+            jurl:   { type: sql.NVarChar, value: te.joinUrl || '' },
+            cb:     { type: sql.NVarChar, value: req.user.id },
+          }
+        );
+        added++;
+      }
+    }
+
+    res.json({ synced: true, added, updated, total: calEvents.length });
+  } catch (err) {
+    console.error('Auto-sync error:', err.message);
+    // Return success:false but don't throw — page should still load
+    res.json({ synced: false, added: 0, updated: 0, error: err.message });
+  }
+});
+
 module.exports = router;
