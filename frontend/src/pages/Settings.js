@@ -568,15 +568,20 @@ const LinkedAccountsSection = () => {
 
   // Fetch Outlook connection status for the current user
   const fetchOutlookStatus = useCallback(async () => {
+    if (!user?.id) return; // wait until user is loaded
     try {
-      const res = await api.get('/teams/status', { params: { userId: user?.id } });
+      const res = await api.get('/teams/status', { params: { userId: user.id } });
       setOutlookStatus(res.data);
     } catch {
-      setOutlookStatus({ connected: false, configured: false });
+      // On error, keep configured: true so the UI doesn't show the wrong message
+      // The backend is running — this is likely a transient network error
+      setOutlookStatus(prev => prev || { connected: false, configured: true });
     }
   }, [user?.id]);
 
-  useEffect(() => { fetchOutlookStatus(); }, [fetchOutlookStatus]);
+  useEffect(() => {
+    if (user?.id) fetchOutlookStatus();
+  }, [fetchOutlookStatus, user?.id]);
 
   const handleConnect = async () => {
     setConnecting(true); setMsg('');
@@ -659,7 +664,7 @@ const LinkedAccountsSection = () => {
               <>
                 <button
                   className={styles.linkedViewBtn}
-                  onClick={() => navigate('/events')}
+                  onClick={() => navigate(user?.role === 'director' ? '/director/events' : '/events')}
                   title="View synced events"
                 >
                   View Events

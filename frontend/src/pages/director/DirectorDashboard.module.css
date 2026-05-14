@@ -166,3 +166,33 @@
 .skeletonCard { height: 200px; background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-to) 50%, var(--skeleton-from) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
 
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── Upcoming Events ── */
+.eventList { display: flex; flex-direction: column; gap: 0; padding: 8px 14px; }
+
+.eventItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border-subtle);
+}
+.eventItem:last-child { border-bottom: none; }
+.eventItemToday { background: #fffbeb; margin: 0 -14px; padding: 10px 14px; border-radius: 8px; }
+
+.eventDateCol {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 36px; flex-shrink: 0;
+}
+.eventDay { font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.eventMonth { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+.todayPill { font-size: 9px; background: #d97706; color: white; padding: 1px 4px; border-radius: 4px; margin-top: 2px; font-weight: 700; }
+
+.eventTypeIcon {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+
+.eventInfo { flex: 1; min-width: 0; }
+.eventTitle { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eventMeta { display: flex; gap: 8px; font-size: 11px; color: var(--text-muted); margin-top: 2px; flex-wrap: wrap; }
+
+.outlookBadge { font-size: 14px; flex-shrink: 0; opacity: 0.7; }

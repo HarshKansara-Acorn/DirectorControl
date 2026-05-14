@@ -73,6 +73,7 @@ function App() {
                 <Route path="tasks"      element={<DirectorTasks />} />
                 <Route path="reminders"  element={<DirectorReminders />} />
                 <Route path="approvals"  element={<DirectorApprovals />} />
+                <Route path="events"     element={<Events />} />
                 <Route path="profile"    element={<Profile />} />
                 <Route path="settings"   element={<Settings />} />
               </Route>

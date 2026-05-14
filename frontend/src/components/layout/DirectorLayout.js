@@ -18,6 +18,7 @@ const navItems = [
   { path: '/director/tasks',      label: 'My Tasks',   icon: CheckSquare },
   { path: '/director/reminders',  label: 'Reminders',  icon: Bell },
   { path: '/director/approvals',  label: 'Approvals',  icon: CheckSquare },
+  { path: '/director/events',     label: 'Events',     icon: Calendar },
 ];
 
 const DirectorLayout = () => {

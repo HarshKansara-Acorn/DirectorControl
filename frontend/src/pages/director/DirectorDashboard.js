@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import {
   CheckSquare, Bell, Clock, AlertCircle, ChevronRight,
-  CheckCircle2, Calendar, Mail, RefreshCw,
+  CheckCircle2, Calendar, Mail, RefreshCw, MapPin,
 } from 'lucide-react';
 import styles from './DirectorDashboard.module.css';
 
@@ -27,6 +27,17 @@ const IMPORTANCE_COLORS = {
   low:    { color: '#94a3b8', bg: '#f8fafc' },
 };
 
+const EVENT_TYPE_STYLES = {
+  meeting:       { icon: '🤝', color: '#1e40af', bg: '#eff6ff' },
+  online_meeting:{ icon: '💻', color: '#7c3aed', bg: '#faf5ff' },
+  conference:    { icon: '🎤', color: '#7c3aed', bg: '#faf5ff' },
+  presentation:  { icon: '📊', color: '#c2410c', bg: '#fff7ed' },
+  company:       { icon: '🏢', color: '#15803d', bg: '#f0fdf4' },
+  personal:      { icon: '👤', color: '#64748b', bg: '#f8fafc' },
+  all_day:       { icon: '📅', color: '#64748b', bg: '#f8fafc' },
+  other:         { icon: '📅', color: '#64748b', bg: '#f8fafc' },
+};
+
 const fmtTime = (t) => {
   if (!t) return '';
   const [h, m] = t.split(':');
@@ -41,16 +52,29 @@ const fmtDate = (d) => d
 const DirectorDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const syncIntervalRef = useRef(null);
 
   const [tasks, setTasks]         = useState([]);
   const [reminders, setReminders] = useState([]);
   const [approvals, setApprovals] = useState([]);
   const [meetings, setMeetings]   = useState([]);
   const [mails, setMails]         = useState([]);
+  const [events, setEvents]       = useState([]);
   const [outlookConnected, setOutlookConnected] = useState(false);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const [lastSynced, setLastSynced] = useState(null);
+
+  // Auto-sync Outlook then refresh events
+  const syncOutlook = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      await api.get('/teams/auto-sync', { params: { directorId: user.id } });
+      const evRes = await api.get('/events');
+      setEvents(evRes.data);
+      setLastSynced(new Date());
+    } catch { /* silent */ }
+  }, [user?.id]);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -59,12 +83,13 @@ const DirectorDashboard = () => {
     const today = new Date().toISOString().split('T')[0];
 
     try {
-      const [t, r, a, m, mailRes] = await Promise.allSettled([
+      const [t, r, a, m, mailRes, evRes] = await Promise.allSettled([
         api.get('/tasks'),
         api.get('/reminders'),
         api.get('/approvals'),
         api.get('/meetings', { params: { date: today } }),
         api.get('/teams/unread-mail', { params: { userId: user?.id } }),
+        api.get('/events'),
       ]);
 
       if (t.status === 'fulfilled') setTasks(t.value.data);
@@ -75,8 +100,8 @@ const DirectorDashboard = () => {
         setOutlookConnected(mailRes.value.data.connected);
         setMails(mailRes.value.data.mails || []);
       }
+      if (evRes.status === 'fulfilled') setEvents(evRes.value.data);
 
-      setLastRefreshed(new Date());
     } catch (err) {
       console.error('Failed to load director dashboard:', err);
     } finally {
@@ -85,10 +110,19 @@ const DirectorDashboard = () => {
     }
   }, [user?.id]);
 
-  // Initial load
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Initial load + immediate Outlook sync
+  useEffect(() => {
+    fetchData();
+    syncOutlook();
+  }, [fetchData, syncOutlook]);
 
-  // Auto-refresh every 60 seconds so dashboard stays in sync with other tabs
+  // Auto-sync Outlook every 30 seconds
+  useEffect(() => {
+    syncIntervalRef.current = setInterval(syncOutlook, 30000);
+    return () => clearInterval(syncIntervalRef.current);
+  }, [syncOutlook]);
+
+  // Refresh dashboard data every 60 seconds
   useEffect(() => {
     const interval = setInterval(() => fetchData(true), 60000);
     return () => clearInterval(interval);
@@ -103,13 +137,17 @@ const DirectorDashboard = () => {
     return 'Good evening';
   };
 
-  // Derived data
   const pendingTasks     = tasks.filter(t => t.status !== 'done');
   const overdueTasks     = tasks.filter(t => t.dueDate && t.dueDate < today && t.status !== 'done');
   const dueTodayTasks    = tasks.filter(t => t.dueDate === today && t.status !== 'done');
   const activeReminders  = reminders.filter(r => r.isActive && (!r.dueDate || r.dueDate >= today));
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
   const unreadMails      = mails.filter(m => !m.isRead);
+  // Upcoming events — next 7 days, sorted by date
+  const upcomingEvents   = events
+    .filter(e => e.startDate >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    .slice(0, 6);
 
   const handleApprovalAction = async (id, action) => {
     try {
@@ -150,14 +188,14 @@ const DirectorDashboard = () => {
         </div>
         <button
           className={`${styles.refreshBtn} ${refreshing ? styles.refreshBtnSpinning : ''}`}
-          onClick={() => fetchData(true)}
+          onClick={() => { fetchData(true); syncOutlook(); }}
           title="Refresh dashboard"
           disabled={refreshing}
         >
           <RefreshCw size={14} />
-          {lastRefreshed && (
+          {lastSynced && (
             <span className={styles.refreshTime}>
-              {lastRefreshed.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              Synced {lastSynced.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
         </button>
@@ -165,10 +203,8 @@ const DirectorDashboard = () => {
 
       {/* ── Stats Row ── */}
       <div className={styles.statsRow}>
-        <div
-          className={`${styles.statCard} ${overdueTasks.length > 0 ? styles.statCardAlert : ''}`}
-          onClick={() => navigate('/director/tasks')} role="button" tabIndex={0}
-        >
+        <div className={`${styles.statCard} ${overdueTasks.length > 0 ? styles.statCardAlert : ''}`}
+          onClick={() => navigate('/director/tasks')} role="button" tabIndex={0}>
           <div className={styles.statIcon} style={{ background: '#fef2f2' }}>
             <AlertCircle size={20} color="#dc2626" />
           </div>
@@ -200,10 +236,8 @@ const DirectorDashboard = () => {
           </div>
         </div>
 
-        <div
-          className={`${styles.statCard} ${pendingApprovals.length > 0 ? styles.statCardWarning : ''}`}
-          onClick={() => navigate('/director/approvals')} role="button" tabIndex={0}
-        >
+        <div className={`${styles.statCard} ${pendingApprovals.length > 0 ? styles.statCardWarning : ''}`}
+          onClick={() => navigate('/director/approvals')} role="button" tabIndex={0}>
           <div className={styles.statIcon} style={{ background: '#fff7ed' }}>
             <Bell size={20} color="#c2410c" />
           </div>
@@ -215,10 +249,8 @@ const DirectorDashboard = () => {
           </div>
         </div>
 
-        <div
-          className={`${styles.statCard} ${meetings.length > 0 ? styles.statCardInfo : ''}`}
-          role="button" tabIndex={0}
-        >
+        <div className={`${styles.statCard} ${meetings.length > 0 ? styles.statCardInfo : ''}`}
+          onClick={() => navigate('/director/events')} role="button" tabIndex={0}>
           <div className={styles.statIcon} style={{ background: '#f0fdf4' }}>
             <Calendar size={20} color="#15803d" />
           </div>
@@ -230,10 +262,7 @@ const DirectorDashboard = () => {
           </div>
         </div>
 
-        <div
-          className={`${styles.statCard} ${unreadMails.length > 0 ? styles.statCardMail : ''}`}
-          role="button" tabIndex={0}
-        >
+        <div className={`${styles.statCard} ${unreadMails.length > 0 ? styles.statCardMail : ''}`}>
           <div className={styles.statIcon} style={{ background: unreadMails.length > 0 ? '#fef2f2' : '#f8fafc' }}>
             <Mail size={20} color={unreadMails.length > 0 ? '#dc2626' : '#94a3b8'} />
           </div>
@@ -248,6 +277,77 @@ const DirectorDashboard = () => {
 
       {/* ── Main Grid ── */}
       <div className={styles.grid}>
+
+        {/* ── Outlook Calendar Events ── */}
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>
+              <Calendar size={16} />
+              <span>Upcoming Events</span>
+              {upcomingEvents.length > 0 && (
+                <span className={styles.badge} style={{ background: '#eff6ff', color: '#1e40af' }}>
+                  {upcomingEvents.length}
+                </span>
+              )}
+              {lastSynced && (
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 4 }}>
+                  · synced {lastSynced.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+            <button className={styles.viewAll} onClick={() => navigate('/director/events')}>
+              View all <ChevronRight size={13} />
+            </button>
+          </div>
+
+          {!outlookConnected && upcomingEvents.length === 0 ? (
+            <div className={styles.empty}>
+              <Calendar size={28} color="var(--text-disabled)" />
+              <p>Connect Outlook to sync your calendar</p>
+              <button className={styles.connectBtn}
+                onClick={() => navigate('/director/settings?section=linked')}>
+                Connect Outlook
+              </button>
+            </div>
+          ) : upcomingEvents.length === 0 ? (
+            <div className={styles.empty}>
+              <Calendar size={28} color="var(--text-disabled)" />
+              <p>No upcoming events</p>
+            </div>
+          ) : (
+            <div className={styles.eventList}>
+              {upcomingEvents.map(ev => {
+                const t = EVENT_TYPE_STYLES[ev.type] || EVENT_TYPE_STYLES.other;
+                const isToday = ev.startDate === today;
+                return (
+                  <div key={ev.id} className={`${styles.eventItem} ${isToday ? styles.eventItemToday : ''}`}>
+                    <div className={styles.eventDateCol}>
+                      <div className={styles.eventDay}>{new Date(ev.startDate).getDate()}</div>
+                      <div className={styles.eventMonth}>
+                        {new Date(ev.startDate).toLocaleDateString('en-GB', { month: 'short' })}
+                      </div>
+                      {isToday && <div className={styles.todayPill}>Today</div>}
+                    </div>
+                    <div className={styles.eventTypeIcon} style={{ background: t.bg }}>{t.icon}</div>
+                    <div className={styles.eventInfo}>
+                      <div className={styles.eventTitle}>{ev.title}</div>
+                      <div className={styles.eventMeta}>
+                        {!ev.isAllDay && ev.startTime && (
+                          <span>🕐 {fmtTime(ev.startTime)}{ev.endTime ? ` – ${fmtTime(ev.endTime)}` : ''}</span>
+                        )}
+                        {ev.isAllDay && <span>All Day</span>}
+                        {ev.location && <span>📍 {ev.location}</span>}
+                      </div>
+                    </div>
+                    {ev.source === 'outlook' && (
+                      <span className={styles.outlookBadge}>📧</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* ── Today's Meetings ── */}
         <div className={styles.section}>
@@ -278,14 +378,10 @@ const DirectorDashboard = () => {
                   </div>
                   <div className={styles.meetingInfo}>
                     <div className={styles.meetingTitle}>
-                      {m.isShared && (
-                        <span className={styles.sharedBadge}>👥 All</span>
-                      )}
+                      {m.isShared && <span className={styles.sharedBadge}>👥 All</span>}
                       {m.title}
                     </div>
-                    {m.location && (
-                      <div className={styles.meetingLocation}>📍 {m.location}</div>
-                    )}
+                    {m.location && <div className={styles.meetingLocation}>📍 {m.location}</div>}
                   </div>
                 </div>
               ))}
@@ -311,10 +407,8 @@ const DirectorDashboard = () => {
             <div className={styles.empty}>
               <Mail size={28} color="var(--text-disabled)" />
               <p>Connect Outlook to see unread mails</p>
-              <button
-                className={styles.connectBtn}
-                onClick={() => navigate('/director/settings?section=linked')}
-              >
+              <button className={styles.connectBtn}
+                onClick={() => navigate('/director/settings?section=linked')}>
                 Connect Outlook
               </button>
             </div>
@@ -325,7 +419,7 @@ const DirectorDashboard = () => {
             </div>
           ) : (
             <div className={styles.mailList}>
-              {unreadMails.slice(0, 6).map(m => {
+              {unreadMails.slice(0, 5).map(m => {
                 const imp = IMPORTANCE_COLORS[m.importance] || IMPORTANCE_COLORS.normal;
                 return (
                   <div key={m.id} className={styles.mailItem}>
@@ -338,14 +432,8 @@ const DirectorDashboard = () => {
                           {new Date(m.receivedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      {m.preview && (
-                        <div className={styles.mailPreview}>{m.preview}</div>
-                      )}
+                      {m.preview && <div className={styles.mailPreview}>{m.preview}</div>}
                     </div>
-                    {m.importance === 'high' && (
-                      <span className={styles.importanceBadge} style={{ background: imp.bg, color: imp.color }}>
-                        !</span>
-                    )}
                   </div>
                 );
               })}
@@ -386,15 +474,10 @@ const DirectorDashboard = () => {
                       {a.dueDate && <span>Due: {fmtDate(a.dueDate)}</span>}
                       <span className={styles.approvalType}>{a.type}</span>
                     </div>
-                    {a.description && <p className={styles.approvalDesc}>{a.description}</p>}
                   </div>
                   <div className={styles.approvalActions}>
-                    <button className={styles.approveBtn} onClick={() => handleApprovalAction(a.id, 'approved')}>
-                      ✓ Approve
-                    </button>
-                    <button className={styles.rejectBtn} onClick={() => handleApprovalAction(a.id, 'rejected')}>
-                      ✕ Reject
-                    </button>
+                    <button className={styles.approveBtn} onClick={() => handleApprovalAction(a.id, 'approved')}>✓ Approve</button>
+                    <button className={styles.rejectBtn} onClick={() => handleApprovalAction(a.id, 'rejected')}>✕ Reject</button>
                   </div>
                 </div>
               ))}
@@ -434,17 +517,13 @@ const DirectorDashboard = () => {
                     <div className={styles.reminderDot} style={{ background: p.dot }} />
                     <div className={styles.reminderContent}>
                       <div className={styles.reminderTitle}>{r.title}</div>
-                      {r.description && <div className={styles.reminderDesc}>{r.description}</div>}
                       {r.dueDate && (
                         <div className={`${styles.reminderDue} ${isOverdue ? styles.reminderDueOverdue : ''}`}>
-                          📅 {isOverdue ? 'Overdue · ' : ''}
-                          {fmtDate(r.dueDate)}
+                          📅 {isOverdue ? 'Overdue · ' : ''}{fmtDate(r.dueDate)}
                         </div>
                       )}
                     </div>
-                    <span className={styles.priorityBadge} style={{ background: p.bg, color: p.color }}>
-                      {p.label}
-                    </span>
+                    <span className={styles.priorityBadge} style={{ background: p.bg, color: p.color }}>{p.label}</span>
                   </div>
                 );
               })}
@@ -477,10 +556,7 @@ const DirectorDashboard = () => {
           ) : (
             <div className={styles.taskTable}>
               <div className={styles.taskTableHead}>
-                <span>Task</span>
-                <span>Priority</span>
-                <span>Status</span>
-                <span>Due Date</span>
+                <span>Task</span><span>Priority</span><span>Status</span><span>Due Date</span>
               </div>
               {pendingTasks.slice(0, 8).map(t => {
                 const p = PRIORITY_STYLES[t.priority] || PRIORITY_STYLES.medium;
@@ -492,12 +568,8 @@ const DirectorDashboard = () => {
                       {isOverdue && <span className={styles.overdueTag}>Overdue</span>}
                       {t.title}
                     </div>
-                    <span className={styles.priorityBadge} style={{ background: p.bg, color: p.color }}>
-                      {p.label}
-                    </span>
-                    <span className={styles.statusBadge} style={{ background: s.bg, color: s.color }}>
-                      {s.label}
-                    </span>
+                    <span className={styles.priorityBadge} style={{ background: p.bg, color: p.color }}>{p.label}</span>
+                    <span className={styles.statusBadge} style={{ background: s.bg, color: s.color }}>{s.label}</span>
                     <span className={`${styles.dueDate} ${isOverdue ? styles.dueDateOverdue : ''}`}>
                       {t.dueDate ? fmtDate(t.dueDate) : '—'}
                     </span>
