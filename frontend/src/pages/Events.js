@@ -27,8 +27,12 @@ const PRIORITY_COLORS = {
 const EMPTY_FORM = { title: '', description: '', type: 'meeting', startDate: '', endDate: '', startTime: '09:00', endTime: '10:00', location: '', attendees: '', isAllDay: false, priority: 'medium', notes: '' };
 
 const Events = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { activeDirectorId, selectedDirector } = useDirector();
+
+  // For directors: use their own ID. For admin: use the selected director ID.
+  const effectiveDirectorId = activeDirectorId || user?.id;
+  const displayName = selectedDirector?.name || user?.name || 'My';
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all');
@@ -42,43 +46,43 @@ const Events = () => {
   const syncIntervalRef = useRef(null);
 
   const fetchEvents = useCallback(async () => {
-    if (!activeDirectorId) return;
+    if (!effectiveDirectorId) return;
     setLoading(true);
     try {
-      const res = await api.get('/events', { params: { directorId: activeDirectorId } });
+      const res = await api.get('/events', { params: { directorId: effectiveDirectorId } });
       setEvents(res.data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  }, [activeDirectorId]);
+  }, [effectiveDirectorId]);
 
   // Auto-sync Outlook calendar silently, then refresh events
   const autoSync = useCallback(async () => {
-    if (!activeDirectorId) return;
+    if (!effectiveDirectorId) return;
     try {
-      await api.get('/teams/auto-sync', { params: { directorId: activeDirectorId } });
+      await api.get('/teams/auto-sync', { params: { directorId: effectiveDirectorId } });
       setLastSynced(new Date());
       // Refresh events list after sync
-      const res = await api.get('/events', { params: { directorId: activeDirectorId } });
+      const res = await api.get('/events', { params: { directorId: effectiveDirectorId } });
       setEvents(res.data);
     } catch {
       // Silent — don't show errors for background sync
     }
-  }, [activeDirectorId]);
+  }, [effectiveDirectorId]);
 
   // On mount: sync immediately then every 30 seconds
   useEffect(() => {
-    if (!activeDirectorId) return;
+    if (!effectiveDirectorId) return;
     autoSync(); // immediate sync on load
     syncIntervalRef.current = setInterval(autoSync, 30000);
     return () => clearInterval(syncIntervalRef.current);
-  }, [autoSync, activeDirectorId]);
+  }, [autoSync, effectiveDirectorId]);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
   const openAdd = () => {
     setEditItem(null);
     setForm(EMPTY_FORM);
-    setSelectedDirectors(activeDirectorId ? [activeDirectorId] : []);
+    setSelectedDirectors(effectiveDirectorId ? [effectiveDirectorId] : []);
     setError('');
     setShowModal(true);
   };
@@ -134,7 +138,7 @@ const Events = () => {
         <div>
           <h1 className={styles.title}>Events</h1>
           <p className={styles.subtitle}>
-            {selectedDirector?.name} — {upcoming} upcoming event{upcoming !== 1 ? 's' : ''}
+            {displayName} — {upcoming} upcoming event{upcoming !== 1 ? 's' : ''}
             {lastSynced && (
               <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 10 }}>
                 · Outlook synced {lastSynced.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
