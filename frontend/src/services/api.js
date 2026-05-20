@@ -20,7 +20,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || '';
+    const isAuthFailure =
+      status === 401 ||
+      (status === 403 && (
+        message === 'Invalid or expired token' ||
+        message === 'Session invalidated. Please sign in again.'
+      ));
+
+    if (isAuthFailure) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
