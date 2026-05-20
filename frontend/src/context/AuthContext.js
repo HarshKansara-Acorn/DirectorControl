@@ -23,9 +23,22 @@ export const AuthProvider = ({ children }) => {
           setUser(fresh);
           localStorage.setItem('user', JSON.stringify(fresh));
         })
-        .catch(() => {
-          // Token may be expired — leave cached user in place; protected routes
-          // will redirect to login if the token is truly invalid
+        .catch((err) => {
+          const status = err?.response?.status;
+          const message = err?.response?.data?.message || '';
+          const authFailed =
+            status === 401 ||
+            (status === 403 && (
+              message === 'Invalid or expired token' ||
+              message === 'Session invalidated. Please sign in again.'
+            ));
+
+          if (authFailed) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            delete api.defaults.headers.common['Authorization'];
+            setUser(null);
+          }
         });
     }
     setLoading(false);

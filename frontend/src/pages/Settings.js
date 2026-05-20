@@ -547,7 +547,7 @@ const SessionsSection = () => {
 
 // ── Linked Accounts Section ───────────────────────────────────────────────────
 const LinkedAccountsSection = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [outlookStatus, setOutlookStatus] = useState(null); // null = loading
   const [connecting, setConnecting]       = useState(false);
@@ -598,7 +598,22 @@ const LinkedAccountsSection = () => {
         setMsg('error:Outlook integration not configured. Contact your administrator.');
       }
     } catch (err) {
-      setMsg(`error:${err.response?.data?.message || 'Failed to start connection'}`);
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || 'Failed to start connection';
+      const authFailed =
+        status === 401 ||
+        (status === 403 && (
+          message === 'Invalid or expired token' ||
+          message === 'Session invalidated. Please sign in again.'
+        ));
+
+      if (authFailed) {
+        await logout();
+        window.location.href = '/login';
+        return;
+      }
+
+      setMsg(`error:${message}`);
     } finally {
       setConnecting(false);
     }
