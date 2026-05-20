@@ -43,7 +43,11 @@ const Events = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [lastSynced, setLastSynced] = useState(null);
+  const [syncEverySeconds] = useState(30);
+  const [nextSyncIn, setNextSyncIn] = useState(30);
+  const [syncing, setSyncing] = useState(false);
   const syncIntervalRef = useRef(null);
+  const countdownRef = useRef(null);
 
   const fetchEvents = useCallback(async () => {
     if (!effectiveDirectorId) return;
@@ -58,24 +62,38 @@ const Events = () => {
   // Auto-sync Outlook calendar silently, then refresh events
   const autoSync = useCallback(async () => {
     if (!effectiveDirectorId) return;
+    setSyncing(true);
     try {
       await api.get('/teams/auto-sync', { params: { directorId: effectiveDirectorId } });
       setLastSynced(new Date());
+      setNextSyncIn(syncEverySeconds);
       // Refresh events list after sync
       const res = await api.get('/events', { params: { directorId: effectiveDirectorId } });
       setEvents(res.data);
     } catch {
       // Silent — don't show errors for background sync
+    } finally {
+      setSyncing(false);
     }
-  }, [effectiveDirectorId]);
+  }, [effectiveDirectorId, syncEverySeconds]);
 
   // On mount: sync immediately then every 30 seconds
   useEffect(() => {
     if (!effectiveDirectorId) return;
     autoSync(); // immediate sync on load
-    syncIntervalRef.current = setInterval(autoSync, 30000);
+    syncIntervalRef.current = setInterval(autoSync, syncEverySeconds * 1000);
     return () => clearInterval(syncIntervalRef.current);
-  }, [autoSync, effectiveDirectorId]);
+  }, [autoSync, effectiveDirectorId, syncEverySeconds]);
+
+  useEffect(() => {
+    countdownRef.current = setInterval(() => {
+      setNextSyncIn((prev) => {
+        if (prev <= 1) return syncEverySeconds;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(countdownRef.current);
+  }, [syncEverySeconds]);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
@@ -144,6 +162,9 @@ const Events = () => {
                 · Outlook synced {lastSynced.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 10 }}>
+              · {syncing ? 'Syncing now...' : `Next Outlook check in ${nextSyncIn}s`}
+            </span>
           </p>
         </div>
         <div className={styles.headerActions}>

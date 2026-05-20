@@ -5,6 +5,21 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { query, queryOne, execute, getPool, sql } = require('../config/db');
 const { validateFile, formatFileSize } = require('../utils/fileUpload');
 
+const parseAttendees = (raw) => {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // Backward compatibility for old rows where attendees were stored as CSV.
+    return String(raw)
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 const mapEvent = (r) => {
   let directorIds = [];
   try { directorIds = r.DirectorIds ? JSON.parse(r.DirectorIds) : []; } catch {}
@@ -17,7 +32,7 @@ const mapEvent = (r) => {
     startDate: r.StartDate ? r.StartDate.toISOString().split('T')[0] : null,
     endDate: r.EndDate ? r.EndDate.toISOString().split('T')[0] : null,
     startTime: r.StartTime, endTime: r.EndTime, location: r.Location,
-    attendees: r.Attendees ? JSON.parse(r.Attendees) : [],
+    attendees: parseAttendees(r.Attendees),
     isAllDay: r.IsAllDay === true || r.IsAllDay === 1,
     priority: r.Priority, status: r.Status, notes: r.Notes,
     teamsId: r.TeamsId, joinUrl: r.JoinUrl, source: r.Source,
