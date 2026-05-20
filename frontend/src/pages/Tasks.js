@@ -33,6 +33,15 @@ const Tasks = () => {
   const [filterDirection, setFilterDirection] = useState('all');
   const [commentCounts, setCommentCounts] = useState({});
 
+  const autoSyncOutlookTasks = useCallback(async () => {
+    if (!activeDirectorId) return;
+    try {
+      await api.get('/teams/auto-sync', { params: { directorId: activeDirectorId } });
+    } catch {
+      // Silent background sync — task board should still work without Outlook.
+    }
+  }, [activeDirectorId]);
+
   const fetchTasks = useCallback(async () => {
     if (!activeDirectorId) return;
     setLoading(true);
@@ -50,6 +59,17 @@ const Tasks = () => {
   }, [activeDirectorId]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  useEffect(() => {
+    if (!activeDirectorId) return;
+
+    autoSyncOutlookTasks().finally(fetchTasks);
+    const intervalId = setInterval(() => {
+      autoSyncOutlookTasks().finally(fetchTasks);
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [activeDirectorId, autoSyncOutlookTasks, fetchTasks]);
 
   const handleDragEnd = async (result) => {
     const { destination, source, draggableId } = result;

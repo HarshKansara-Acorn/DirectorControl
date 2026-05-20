@@ -24,6 +24,8 @@ const mapTask = (r) => ({
   dueDate:     r.DueDate ? r.DueDate.toISOString().split('T')[0] : null,
   dueTime:     r.DueTime || null,
   tags:        r.Tags ? JSON.parse(r.Tags) : [],
+  source:      r.Source || 'manual',
+  externalTaskId: r.ExternalTaskId || null,
   createdAt:   r.CreatedAt,
   updatedAt:   r.UpdatedAt,
   commentCount: r.CommentCount ? Number(r.CommentCount) : 0,

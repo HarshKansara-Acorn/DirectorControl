@@ -32,6 +32,15 @@ const DirectorTasks = () => {
   // Track live comment counts per task (updated by InlineTaskChat)
   const [commentCounts, setCommentCounts] = useState({});
 
+  const autoSyncOutlookTasks = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      await api.get('/teams/auto-sync', { params: { directorId: user.id } });
+    } catch {
+      // Silent background sync — avoid interrupting manual task workflows.
+    }
+  }, [user?.id]);
+
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
@@ -46,6 +55,17 @@ const DirectorTasks = () => {
   }, []);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    autoSyncOutlookTasks().finally(fetchTasks);
+    const intervalId = setInterval(() => {
+      autoSyncOutlookTasks().finally(fetchTasks);
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [user?.id, autoSyncOutlookTasks, fetchTasks]);
 
   const handleDragEnd = async ({ destination, source, draggableId }) => {
     if (!destination) return;

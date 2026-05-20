@@ -5,6 +5,97 @@ const teamsService = require('../services/teamsService');
 const { execute, query, sql } = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
+const mapOutlookTaskStatusToApp = (status) => {
+  switch ((status || '').toLowerCase()) {
+    case 'completed':
+      return 'done';
+    case 'inprogress':
+      return 'inprogress';
+    case 'waitingonothers':
+      return 'review';
+    case 'deferred':
+      return 'review';
+    case 'notstarted':
+    default:
+      return 'todo';
+  }
+};
+
+const mapOutlookTaskPriorityToApp = (importance) => {
+  if ((importance || '').toLowerCase() === 'high') return 'high';
+  if ((importance || '').toLowerCase() === 'low') return 'low';
+  return 'medium';
+};
+
+const syncOutlookTasksToApp = async ({ directorId, tokenUserId }) => {
+  const outlookTasks = await teamsService.getTasks(tokenUserId);
+  let added = 0;
+  let updated = 0;
+
+  for (const ot of outlookTasks) {
+    const extId = ot.id || '';
+    const normalizedExtId = extId.startsWith('teams-task-') ? extId : `teams-task-${extId}`;
+    if (!normalizedExtId) continue;
+
+    const dueDate = ot.dueDate ? new Date(ot.dueDate) : null;
+    const status = mapOutlookTaskStatusToApp(ot.status);
+    const priority = mapOutlookTaskPriorityToApp(ot.importance);
+    const tags = ot.listName ? [ot.listName] : [];
+
+    const existing = await query(
+      `SELECT Id FROM DC_Tasks
+       WHERE ExternalTaskId = @extId AND AssignedTo = @directorId`,
+      {
+        extId: { type: sql.NVarChar, value: normalizedExtId },
+        directorId: { type: sql.NVarChar, value: directorId },
+      }
+    );
+
+    if (existing.length > 0) {
+      await execute(
+        `UPDATE DC_Tasks SET
+           Title=@title, Description=@desc, Priority=@priority, Status=@status,
+           DueDate=@dueDate, Tags=@tags, Source='outlook', UpdatedAt=GETUTCDATE()
+         WHERE ExternalTaskId=@extId AND AssignedTo=@directorId`,
+        {
+          title: { type: sql.NVarChar, value: ot.title || '(No title)' },
+          desc: { type: sql.NVarChar, value: ot.body || '' },
+          priority: { type: sql.NVarChar, value: priority },
+          status: { type: sql.NVarChar, value: status },
+          dueDate: { type: sql.Date, value: dueDate },
+          tags: { type: sql.NVarChar, value: JSON.stringify(tags) },
+          extId: { type: sql.NVarChar, value: normalizedExtId },
+          directorId: { type: sql.NVarChar, value: directorId },
+        }
+      );
+      updated++;
+    } else {
+      await execute(
+        `INSERT INTO DC_Tasks
+          (Id, Title, Description, Priority, Status, AssignedTo, CreatedBy, DueDate, DueTime, Tags, ExternalTaskId, Source, CreatedAt, UpdatedAt)
+         VALUES
+          (@id, @title, @desc, @priority, @status, @assignedTo, @createdBy, @dueDate, NULL, @tags, @extId, 'outlook', GETUTCDATE(), GETUTCDATE())`,
+        {
+          id: { type: sql.NVarChar, value: uuidv4() },
+          title: { type: sql.NVarChar, value: ot.title || '(No title)' },
+          desc: { type: sql.NVarChar, value: ot.body || '' },
+          priority: { type: sql.NVarChar, value: priority },
+          status: { type: sql.NVarChar, value: status },
+          assignedTo: { type: sql.NVarChar, value: directorId },
+          // Keep ownership with the in-app director context so visibility is consistent.
+          createdBy: { type: sql.NVarChar, value: directorId },
+          dueDate: { type: sql.Date, value: dueDate },
+          tags: { type: sql.NVarChar, value: JSON.stringify(tags) },
+          extId: { type: sql.NVarChar, value: normalizedExtId },
+        }
+      );
+      added++;
+    }
+  }
+
+  return { total: outlookTasks.length, added, updated };
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // OAuth Flow
 // ─────────────────────────────────────────────────────────────────────────────
@@ -440,7 +531,17 @@ router.get('/auto-sync', authenticateToken, async (req, res) => {
       }
     }
 
-    res.json({ synced: true, added, updated, total: calEvents.length });
+    const taskSync = await syncOutlookTasksToApp({ directorId, tokenUserId });
+
+    res.json({
+      synced: true,
+      added,
+      updated,
+      total: calEvents.length,
+      tasksAdded: taskSync.added,
+      tasksUpdated: taskSync.updated,
+      tasksTotal: taskSync.total,
+    });
   } catch (err) {
     console.error('Auto-sync error:', err.message);
     // Return success:false but don't throw — page should still load

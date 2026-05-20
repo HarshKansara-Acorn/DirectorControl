@@ -29,6 +29,8 @@ const migrateProfile = async () => {
       { table: 'DC_Meetings', name: 'IsShared',    def: 'BIT NOT NULL DEFAULT 0' },
       { table: 'DC_Events',   name: 'DirectorIds', def: 'NVARCHAR(500) NULL' },
       { table: 'DC_Events',   name: 'IsShared',    def: 'BIT NOT NULL DEFAULT 0' },
+      { table: 'DC_Tasks',    name: 'ExternalTaskId', def: 'NVARCHAR(250) NULL' },
+      { table: 'DC_Tasks',    name: 'Source',         def: "NVARCHAR(20) NULL DEFAULT 'manual'" },
     ];
 
     for (const col of userCols) {

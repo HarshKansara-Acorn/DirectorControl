@@ -558,13 +558,16 @@ const LinkedAccountsSection = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('teamsConnected') === 'true') {
       setMsg('success:Outlook Calendar connected successfully!');
+      if (user?.id) {
+        api.get('/teams/auto-sync', { params: { directorId: user.id } }).catch(() => {});
+      }
       window.history.replaceState({}, '', '/settings?section=linked');
     }
     if (params.get('teamsError')) {
       setMsg(`error:${decodeURIComponent(params.get('teamsError'))}`);
       window.history.replaceState({}, '', '/settings?section=linked');
     }
-  }, []);
+  }, [user?.id]);
 
   // Fetch Outlook connection status for the current user
   const fetchOutlookStatus = useCallback(async () => {
