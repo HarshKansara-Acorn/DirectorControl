@@ -58,11 +58,25 @@ router.get('/', authenticateToken, async (req, res) => {
       if (type && type !== 'all') { q += ' AND Type=@type'; params.type = { type: sql.NVarChar, value: type }; }
       const individual = await query(q, params);
 
-      // Shared events
-      let sq = "SELECT * FROM DC_Events WHERE IsShared=1 AND DirectorIds LIKE @pattern";
-      const sharedParams = { pattern: { type: sql.NVarChar, value: `%${targetId}%` } };
-      if (type && type !== 'all') { sq += ' AND Type=@type'; sharedParams.type = { type: sql.NVarChar, value: type }; }
-      const shared = await query(sq, sharedParams);
+      // Shared events (backward-compatible: skip if legacy schema lacks IsShared/DirectorIds)
+      let shared = [];
+      try {
+        let sq = "SELECT * FROM DC_Events WHERE IsShared=1 AND DirectorIds LIKE @pattern";
+        const sharedParams = { pattern: { type: sql.NVarChar, value: `%${targetId}%` } };
+        if (type && type !== 'all') { sq += ' AND Type=@type'; sharedParams.type = { type: sql.NVarChar, value: type }; }
+        shared = await query(sq, sharedParams);
+      } catch (sharedErr) {
+        if (
+          String(sharedErr.message || '').includes('Invalid column name')
+          || String(sharedErr.message || '').includes('IsShared')
+          || String(sharedErr.message || '').includes('DirectorIds')
+        ) {
+          // Legacy DB without shared-event columns: continue with individual events only.
+          shared = [];
+        } else {
+          throw sharedErr;
+        }
+      }
 
       const seen = new Set();
       for (const r of [...individual, ...shared]) {
@@ -82,6 +96,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     res.json(rows.map(mapEvent));
   } catch (err) {
+    console.error('GET /events error:', err.message);
     res.status(500).json({ message: 'Failed to fetch events' });
   }
 });
