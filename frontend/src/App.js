@@ -19,6 +19,7 @@ import Events from './pages/Events';
 import FamilyTree from './pages/FamilyTree';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import AdminDashboard from './pages/AdminDashboard';
 import DirectorDashboard from './pages/director/DirectorDashboard';
 import DirectorTasks from './pages/director/DirectorTasks';
 import DirectorReminders from './pages/director/DirectorReminders';
@@ -48,6 +49,7 @@ function App() {
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                <Route path="admin-dashboard" element={<AdminDashboard />} />
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="travel" element={<Travel />} />
                 <Route path="documents" element={<Documents />} />

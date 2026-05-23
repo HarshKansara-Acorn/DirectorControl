@@ -92,20 +92,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {user?.role === 'admin' && (
-        <section className={styles.adminSection}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <p className={styles.sectionLabel}>Admin dashboard</p>
-              <h2 className={styles.sectionTitle}>Director Outlook Connections</h2>
-            </div>
-            <p className={styles.sectionNote}>
-              Use this section to review Outlook sync status and generate secure connection links for directors.
-            </p>
-          </div>
-          <DirectorOutlookConnections />
-        </section>
-      )}
 
       {/* Cards Grid */}
       {loading ? (

@@ -261,7 +261,7 @@ const DashboardLayout = () => {
                   <Settings size={15} /> Settings
                 </button>
                 {isAdmin && (
-                  <button className={styles.userDropdownItem} onClick={() => { setShowUserMenu(false); navigate('/dashboard'); }}>
+                  <button className={styles.userDropdownItem} onClick={() => { setShowUserMenu(false); navigate('/admin-dashboard'); }}>
                     <LayoutDashboard size={15} /> Admin Dashboard
                   </button>
                 )}
