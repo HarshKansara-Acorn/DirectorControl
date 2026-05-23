@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Modal from './Modal';
 import { Select } from './FormField';
 import api from '../../services/api';
@@ -44,7 +44,7 @@ const CommentRow = ({ comment, currentUserId, isAdmin, onDelete }) => {
   return (
     <div className={`${styles.commentRow} ${isOwn ? styles.commentRowOwn : ''}`}>
       {!isOwn && <Avatar name={comment.userName} role={comment.userRole} />}
-      <div className={`${styles.commentBubble} ${isOwn ? styles.commentBubbleOwn : ''}`}>
+      <div className={`${styles.commentBubble} ${isOwn ? styles.commentBubbleOwn : ''} ${!isOwn && !comment.isRead ? styles.commentBubbleUnread : ''}`}>
         <div className={styles.commentMeta}>
           <span className={styles.commentAuthor}>{comment.userName}</span>
           <span className={styles.commentRole} style={{ background: rc.bg, color: rc.color }}>
@@ -55,7 +55,7 @@ const CommentRow = ({ comment, currentUserId, isAdmin, onDelete }) => {
             <button className={styles.commentDelete} onClick={() => onDelete(comment.id)} title="Delete">✕</button>
           )}
         </div>
-        <p className={styles.commentText}>{comment.comment}</p>
+        <p className={`${styles.commentText} ${!isOwn && !comment.isRead ? styles.commentTextUnread : ''}`}>{comment.comment}</p>
       </div>
       {isOwn && <Avatar name={comment.userName} role={comment.userRole} />}
     </div>
@@ -94,11 +94,27 @@ const TaskDetailModal = ({ task, onClose, onUpdate }) => {
 
   useEffect(() => { fetchComments(); }, [task.id]); // eslint-disable-line
 
+  const markAllCommentsAsRead = useCallback(async () => {
+    if (!user?.id || !comments.length) return;
+    const unreadIds = comments
+      .filter(c => c.userId !== user.id && !c.isRead)
+      .map(c => c.id);
+    if (!unreadIds.length) return;
+
+    try {
+      await api.patch(`/tasks/${task.id}/comments/read-all`, { commentIds: unreadIds });
+      setComments(prev => prev.map(c => c.userId !== user.id ? { ...c, isRead: true } : c));
+    } catch (err) {
+      console.error('Failed to mark comments as read:', err);
+    }
+  }, [comments, task.id, user?.id]);
+
   useEffect(() => {
     if (activeTab === 'comments') {
+      markAllCommentsAsRead();
       commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [comments, activeTab]);
+  }, [comments, activeTab, markAllCommentsAsRead]);
 
   // ── Save status ────────────────────────────────────────────────────────────
   const handleSave = async () => {

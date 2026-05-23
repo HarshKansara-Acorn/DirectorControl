@@ -97,8 +97,11 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
     setSending(true);
     try {
       const res = await api.post(`/tasks/${taskId}/comments`, { comment: trimmed });
-      setComments(prev => [...prev, { ...res.data, isRead: true }]);
-      onCommentCountChange?.(comments.length + 1);
+      setComments(prev => {
+        const next = [...prev, { ...res.data, isRead: true }];
+        onCommentCountChange?.(next.length);
+        return next;
+      });
       setText('');
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -118,8 +121,11 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
   const handleDelete = async (commentId) => {
     try {
       await api.delete(`/tasks/${taskId}/comments/${commentId}`);
-      setComments(prev => prev.filter(c => c.id !== commentId));
-      onCommentCountChange?.(comments.length - 1);
+      setComments(prev => {
+        const next = prev.filter(c => c.id !== commentId);
+        onCommentCountChange?.(next.length);
+        return next;
+      });
     } catch (err) {
       console.error('Failed to delete comment:', err);
     }
