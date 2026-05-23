@@ -271,7 +271,7 @@ CREATE TABLE OutlookReminders (
   SyncedAt          DATETIME2     NOT NULL DEFAULT GETUTCDATE()
 )
 
-IF NOT EXISTS (SELECT 1 FROM DC_Users WHERE Email = 'harsh.kansara@acornuniversalconsultancy.com')
+IF NOT EXISTS (SELECT 1 FROM DC_Users WHERE Email = 'chintan.patel@acornuniversalconsultancy.com')
 INSERT INTO DC_Users (Id, Name, Email, Password, Role, Title, Avatar) VALUES ('usr-admin-001', 'Chintan Patel', 'chintan.patel@acornuniversalconsultancy.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lHHi', 'admin', 'Personal Assistant', 'CP')
 
 IF NOT EXISTS (SELECT 1 FROM DC_Users WHERE Email = 'director1@acornuniversalconsultancy.com')
@@ -282,3 +282,6 @@ INSERT INTO DC_Users (Id, Name, Email, Password, Role, Title, Avatar) VALUES ('u
 
 IF NOT EXISTS (SELECT 1 FROM DC_Users WHERE Email = 'director3@acornuniversalconsultancy.com')
 INSERT INTO DC_Users (Id, Name, Email, Password, Role, Title, Avatar) VALUES ('usr-dir-003', 'Umesh Savaliya', 'umesh.savaliya@acornuniversalconsultancy.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lHHi', 'director', 'Director', 'US')
+
+IF NOT EXISTS (SELECT 1 FROM DC_Users WHERE Email = 'harsh.kansara@acornuniversalconsultancy.com')
+INSERT INTO DC_Users (Id, Name, Email, Password, Role, Title, Avatar) VALUES ('usr-dir-004', 'Harsh Kansara', 'harsh.kansara@acornuniversalconsultancy.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lHHi', 'director', 'Director', 'HK')
