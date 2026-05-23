@@ -260,6 +260,11 @@ const DashboardLayout = () => {
                 <button className={styles.userDropdownItem} onClick={() => { setShowUserMenu(false); navigate('/settings'); }}>
                   <Settings size={15} /> Settings
                 </button>
+                {isAdmin && (
+                  <button className={styles.userDropdownItem} onClick={() => { setShowUserMenu(false); navigate('/dashboard'); }}>
+                    <LayoutDashboard size={15} /> Admin Dashboard
+                  </button>
+                )}
                 <hr className={styles.divider} />
                 <button
                   className={`${styles.userDropdownItem} ${styles.logoutItem}`}
