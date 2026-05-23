@@ -92,7 +92,6 @@ app.listen(PORT, async () => {
     const users = await query('SELECT Id, Email, Name FROM DC_Users');
     const nameMap = {
       'chintan.patel@acornuniversalconsultancy.com':  { name: 'Chintan Patel',  first: 'Chintan', last: 'Patel',    avatar: 'CP', newEmail: null },
-      'tanvi.laddha@acornuniversalconsultancy.com':   { name: 'Tanvi Laddha',   first: 'Tanvi',   last: 'Laddha',   avatar: 'TL', newEmail: null },
       'harsh.kansara@acornuniversalconsultancy.com':  { name: 'Harsh Kansara',  first: 'Harsh',   last: 'Kansara',  avatar: 'HK', newEmail: null },
       'dhruval.patel@acornuniversalconsultancy.com':  { name: 'Dhruval Patel',  first: 'Dhruval', last: 'Patel',    avatar: 'DP', newEmail: null },
       'gaumish.patel@acornuniversalconsultancy.com':  { name: 'Gaumish Patel',  first: 'Gaumish', last: 'Patel',    avatar: 'GP', newEmail: null },
