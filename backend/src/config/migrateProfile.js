@@ -64,6 +64,104 @@ const migrateProfile = async () => {
       `);
     } catch (e) { /* already exists */ }
 
+    try {
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='OutlookConnections' AND xtype='U')
+        CREATE TABLE OutlookConnections (
+          Id                   NVARCHAR(36)  NOT NULL PRIMARY KEY,
+          DirectorId           NVARCHAR(36)  NOT NULL UNIQUE,
+          MicrosoftUserId      NVARCHAR(200) NULL,
+          MsUserEmail          NVARCHAR(150) NULL,
+          AccessTokenEncrypted NVARCHAR(MAX) NULL,
+          RefreshTokenEncrypted NVARCHAR(MAX) NULL,
+          TokenExpiry          BIGINT        NULL,
+          ConnectedAt          DATETIME2     NULL,
+          LastSync             DATETIME2     NULL,
+          CreatedAt            DATETIME2     NOT NULL DEFAULT GETUTCDATE(),
+          UpdatedAt            DATETIME2     NOT NULL DEFAULT GETUTCDATE()
+        )
+      `);
+    } catch (e) { /* already exists */ }
+
+    try {
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='OutlookCalendarEvents' AND xtype='U')
+        CREATE TABLE OutlookCalendarEvents (
+          Id               NVARCHAR(36)  NOT NULL PRIMARY KEY,
+          DirectorId       NVARCHAR(36)  NOT NULL,
+          OutlookResourceId NVARCHAR(200) NOT NULL,
+          Subject          NVARCHAR(250) NOT NULL,
+          Body             NVARCHAR(MAX) NULL,
+          StartDateTime    DATETIME2     NOT NULL,
+          EndDateTime      DATETIME2     NULL,
+          IsAllDay         BIT           NOT NULL DEFAULT 0,
+          Location         NVARCHAR(300) NULL,
+          Organizer        NVARCHAR(200) NULL,
+          Attendees        NVARCHAR(MAX) NULL,
+          RawData          NVARCHAR(MAX) NULL,
+          SyncedAt         DATETIME2     NOT NULL DEFAULT GETUTCDATE()
+        )
+      `);
+    } catch (e) { /* already exists */ }
+
+    try {
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='OutlookEmails' AND xtype='U')
+        CREATE TABLE OutlookEmails (
+          Id               NVARCHAR(36)  NOT NULL PRIMARY KEY,
+          DirectorId       NVARCHAR(36)  NOT NULL,
+          OutlookResourceId NVARCHAR(200) NOT NULL,
+          Subject          NVARCHAR(250) NOT NULL,
+          FromAddress      NVARCHAR(200) NULL,
+          FromName         NVARCHAR(200) NULL,
+          ReceivedAt       DATETIME2     NULL,
+          Preview          NVARCHAR(MAX) NULL,
+          IsRead           BIT           NOT NULL DEFAULT 0,
+          Importance       NVARCHAR(50)  NOT NULL DEFAULT 'normal',
+          RawData          NVARCHAR(MAX) NULL,
+          SyncedAt         DATETIME2     NOT NULL DEFAULT GETUTCDATE()
+        )
+      `);
+    } catch (e) { /* already exists */ }
+
+    try {
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='OutlookTasks' AND xtype='U')
+        CREATE TABLE OutlookTasks (
+          Id               NVARCHAR(36)  NOT NULL PRIMARY KEY,
+          DirectorId       NVARCHAR(36)  NOT NULL,
+          OutlookResourceId NVARCHAR(200) NOT NULL,
+          Title            NVARCHAR(300) NOT NULL,
+          ListName         NVARCHAR(200) NULL,
+          Status           NVARCHAR(100) NOT NULL DEFAULT 'notStarted',
+          Importance       NVARCHAR(50)  NOT NULL DEFAULT 'normal',
+          DueDate          DATETIME2     NULL,
+          ReminderDate     DATETIME2     NULL,
+          Body             NVARCHAR(MAX) NULL,
+          RawData          NVARCHAR(MAX) NULL,
+          SyncedAt         DATETIME2     NOT NULL DEFAULT GETUTCDATE()
+        )
+      `);
+    } catch (e) { /* already exists */ }
+
+    try {
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='OutlookReminders' AND xtype='U')
+        CREATE TABLE OutlookReminders (
+          Id               NVARCHAR(36)  NOT NULL PRIMARY KEY,
+          DirectorId       NVARCHAR(36)  NOT NULL,
+          OutlookResourceId NVARCHAR(200) NOT NULL,
+          Title            NVARCHAR(300) NOT NULL,
+          ListName         NVARCHAR(200) NULL,
+          DueDate          DATETIME2     NULL,
+          ReminderDate     DATETIME2     NULL,
+          Body             NVARCHAR(MAX) NULL,
+          RawData          NVARCHAR(MAX) NULL,
+          SyncedAt         DATETIME2     NOT NULL DEFAULT GETUTCDATE()
+        )
+      `);
+    } catch (e) { /* already exists */ }
+
     // Add password reset columns if they don't exist
     try {
       await pool.request().query(`

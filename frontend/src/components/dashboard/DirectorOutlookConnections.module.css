@@ -1,0 +1,16 @@
+.list { display: flex; flex-direction: column; gap: 16px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.userInfo { display: flex; flex-direction: column; gap: 6px; }
+.name { font-weight: 600; color: var(--text-primary); }
+.meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; color: var(--text-secondary); align-items: center; }
+.statusConnected { display: inline-flex; align-items: center; gap: 6px; color: var(--green-text); }
+.statusPending { display: inline-flex; align-items: center; gap: 6px; color: var(--brand-primary); }
+.statusError { display: inline-flex; align-items: center; gap: 6px; color: var(--red-text); }
+.syncTime { color: var(--text-muted); }
+.actions { display: flex; gap: 10px; justify-content: flex-end; }
+.connectBtn, .disconnectBtn { border: none; border-radius: 8px; padding: 9px 14px; font-weight: 600; cursor: pointer; }
+.connectBtn { background: var(--brand-primary); color: #fff; }
+.disconnectBtn { background: #f3f4f6; color: var(--text-primary); }
+.feedback { font-size: 13px; color: var(--text-muted); margin-top: 6px; grid-column: 1 / -1; }
+.hint { margin-top: 14px; font-size: 13px; color: var(--text-muted); }
+.empty, .loading { color: var(--text-secondary); padding: 14px 0; }

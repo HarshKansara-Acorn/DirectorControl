@@ -50,6 +50,7 @@ app.use('/api/assets',    require('./routes/assets'));
 app.use('/api/events',      require('./routes/events'));
 app.use('/api/teams',       require('./routes/teams'));
 app.use('/api/family-tree', require('./routes/familyTree'));
+app.use('/oauth',           require('./routes/outlook'));
 
 // Health check — tests live DB connection
 app.get('/api/health', async (req, res) => {
@@ -82,6 +83,9 @@ app.listen(PORT, async () => {
 
     const migrateProfile = require('./config/migrateProfile');
     await migrateProfile();
+
+    const outlookSyncWorker = require('./services/outlookSyncWorker');
+    outlookSyncWorker.start();
 
     // Sync real user names and emails — runs on every startup, updates only what changed
     const { execute, query, sql } = require('./config/db');
@@ -116,6 +120,12 @@ app.listen(PORT, async () => {
       }
     }
     console.log('✅ User names & emails synced');
+
+    // Clear all session tokens on startup so stale browser sessions
+    // don't get "Session invalidated" errors after a server restart.
+    // Users will simply need to log in again after a restart.
+    await execute('UPDATE DC_Users SET SessionToken=NULL');
+    console.log('✅ Session tokens cleared — users will re-authenticate on next request');
   } catch (err) {
     console.error('Startup error:', err.message);
   }

@@ -8,6 +8,7 @@ import RemindersCard from '../components/dashboard/RemindersCard';
 import ApprovalsCard from '../components/dashboard/ApprovalsCard';
 import TravelCard from '../components/dashboard/TravelCard';
 import TaskSummaryCard from '../components/dashboard/TaskSummaryCard';
+import DirectorOutlookConnections from '../components/dashboard/DirectorOutlookConnections';
 import styles from './Dashboard.module.css';
 
 const Dashboard = () => {
@@ -90,6 +91,21 @@ const Dashboard = () => {
           </p>
         </div>
       </div>
+
+      {user?.role === 'admin' && (
+        <section className={styles.adminSection}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <p className={styles.sectionLabel}>Admin dashboard</p>
+              <h2 className={styles.sectionTitle}>Director Outlook Connections</h2>
+            </div>
+            <p className={styles.sectionNote}>
+              Use this section to review Outlook sync status and generate secure connection links for directors.
+            </p>
+          </div>
+          <DirectorOutlookConnections />
+        </section>
+      )}
 
       {/* Cards Grid */}
       {loading ? (

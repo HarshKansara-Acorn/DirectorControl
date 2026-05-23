@@ -8,6 +8,12 @@
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 
+.adminSection { display: flex; flex-direction: column; gap: 16px; padding: 24px; background: var(--surface-secondary); border: 1px solid var(--border); border-radius: 18px; }
+.sectionHeader { display: flex; flex-direction: column; gap: 10px; }
+.sectionLabel { margin: 0; font-size: 12px; font-weight: 700; color: var(--brand-primary); letter-spacing: 0.08em; text-transform: uppercase; }
+.sectionTitle { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-primary); }
+.sectionNote { margin: 0; font-size: 14px; color: var(--text-secondary); max-width: 780px; }
+
 .loadingGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 
 .skeletonCard {

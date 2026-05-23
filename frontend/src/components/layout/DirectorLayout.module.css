@@ -1,4 +1,18 @@
-.layout { min-height: 100vh; background: var(--bg-app); display: flex; flex-direction: column; }
+.layout { 
+  min-height: 100vh; 
+  background: 
+    var(--bg-mesh-overlay),
+    linear-gradient(135deg, #f0f9fe 0%, #e8f4fd 50%, #e0f2fe 100%);
+  display: flex; 
+  flex-direction: column;
+  position: relative;
+}
+
+[data-theme="dark"] .layout {
+  background: 
+    var(--bg-mesh-overlay),
+    linear-gradient(135deg, #0c3d5c 0%, #0f4a70 50%, #1a5a8a 100%);
+}
 
 .header {
   background: var(--header-bg); border-bottom: 1px solid var(--header-border);

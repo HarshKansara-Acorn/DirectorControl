@@ -36,6 +36,10 @@ const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [filterName, setFilterName] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -135,20 +139,44 @@ const Events = () => {
     catch (err) { console.error(err); }
   };
 
-  const filtered = events.filter(e => filterType === 'all' || e.type === filterType);
-  const upcoming = events.filter(e => e.status === 'upcoming').length;
-
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '—';
   const isToday = (d) => d === new Date().toISOString().split('T')[0];
   const isThisWeek = (d) => { const diff = (new Date(d) - new Date()) / (1000 * 60 * 60 * 24); return diff >= 0 && diff <= 7; };
 
-  // Group events by month
+  // Comprehensive filtering logic
+  const filtered = events.filter(e => {
+    // Filter by type
+    if (filterType !== 'all' && e.type !== filterType) return false;
+    
+    // Filter by priority
+    if (filterPriority !== 'all' && e.priority !== filterPriority) return false;
+    
+    // Filter by name/title (case-insensitive)
+    if (filterName && !e.title.toLowerCase().includes(filterName.toLowerCase())) return false;
+    
+    // Filter by date range
+    if (filterDateFrom && new Date(e.startDate) < new Date(filterDateFrom)) return false;
+    if (filterDateTo && new Date(e.startDate) > new Date(filterDateTo)) return false;
+    
+    return true;
+  }).sort((a, b) => new Date(b.startDate) - new Date(a.startDate)); // Sort by date, newest first
+
+  const upcoming = events.filter(e => e.status === 'upcoming').length;
+
+  // Group events by month, then sort month groups by date (newest first)
   const grouped = filtered.reduce((acc, event) => {
     const month = new Date(event.startDate).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     if (!acc[month]) acc[month] = [];
     acc[month].push(event);
     return acc;
   }, {});
+
+  // Sort month groups by date (newest first)
+  const sortedMonths = Object.keys(grouped).sort((a, b) => {
+    const dateA = new Date(grouped[a][0].startDate);
+    const dateB = new Date(grouped[b][0].startDate);
+    return dateB - dateA;
+  });
 
   return (
     <div className={styles.page}>
@@ -168,14 +196,78 @@ const Events = () => {
           </p>
         </div>
         <div className={styles.headerActions}>
+          <input
+            type="text"
+            placeholder="Search by name..."
+            value={filterName}
+            onChange={e => setFilterName(e.target.value)}
+            className={styles.filterSelect}
+            style={{ flex: 1, minWidth: 150 }}
+          />
           <select className={styles.filterSelect} value={filterType} onChange={e => setFilterType(e.target.value)} aria-label="Filter by type">
             <option value="all">All Types</option>
             {Object.entries(TYPE_STYLES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+          <select className={styles.filterSelect} value={filterPriority} onChange={e => setFilterPriority(e.target.value)} aria-label="Filter by priority">
+            <option value="all">All Priorities</option>
+            <option value="high">High Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="low">Low Priority</option>
           </select>
           {isAdmin && (
             <button className={styles.addBtn} onClick={openAdd}><Plus size={15} /> Add Event</button>
           )}
         </div>
+      </div>
+
+      {/* Date range filter */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
+        <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+          Date Range:
+        </label>
+        <input
+          type="date"
+          value={filterDateFrom}
+          onChange={e => setFilterDateFrom(e.target.value)}
+          className={styles.filterSelect}
+          style={{ minWidth: 120 }}
+          title="From date"
+        />
+        <span style={{ color: 'var(--text-muted)' }}>to</span>
+        <input
+          type="date"
+          value={filterDateTo}
+          onChange={e => setFilterDateTo(e.target.value)}
+          className={styles.filterSelect}
+          style={{ minWidth: 120 }}
+          title="To date"
+        />
+        {(filterName || filterType !== 'all' || filterPriority !== 'all' || filterDateFrom || filterDateTo) && (
+          <button
+            onClick={() => {
+              setFilterName('');
+              setFilterType('all');
+              setFilterPriority('all');
+              setFilterDateFrom('');
+              setFilterDateTo('');
+            }}
+            style={{
+              padding: '6px 12px',
+              background: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'opacity 0.15s',
+            }}
+            onMouseEnter={e => e.target.style.opacity = '0.9'}
+            onMouseLeave={e => e.target.style.opacity = '1'}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* No sync message needed — auto-sync is silent */}
@@ -190,11 +282,11 @@ const Events = () => {
         </div>
       ) : (
         <div className={styles.eventsList}>
-          {Object.entries(grouped).map(([month, monthEvents]) => (
+          {sortedMonths.map((month) => (
             <div key={month} className={styles.eventGroup}>
               <h2 className={styles.eventGroupTitle}>{month}</h2>
               <div className={styles.eventsTimeline}>
-                {monthEvents.map(item => {
+                {grouped[month].map(item => {
                   const t = TYPE_STYLES[item.type] || TYPE_STYLES.other;
                   const p = PRIORITY_COLORS[item.priority] || PRIORITY_COLORS.medium;
                   const today = isToday(item.startDate);

@@ -44,12 +44,8 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
   const fetchComments = useCallback(async (silent = false) => {
     try {
       const res = await api.get(`/tasks/${taskId}/comments`);
-      setComments(prev => {
-        // Only update if something changed (avoids unnecessary re-renders)
-        if (JSON.stringify(prev.map(c => c.id)) === JSON.stringify(res.data.map(c => c.id))) return prev;
-        onCommentCountChange?.(res.data.length);
-        return res.data;
-      });
+      setComments(res.data);
+      onCommentCountChange?.(res.data.length);
     } catch (err) {
       console.error('Failed to fetch comments:', err);
     } finally {
@@ -57,12 +53,31 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
     }
   }, [taskId, onCommentCountChange]);
 
+  const markAllAsRead = useCallback(async () => {
+    if (!user?.id) return;
+    const unreadIds = comments
+      .filter(c => c.userId !== user.id && !c.isRead)
+      .map(c => c.id);
+    if (!unreadIds.length) return;
+
+    try {
+      await api.patch(`/tasks/${taskId}/comments/read-all`, { commentIds: unreadIds });
+      setComments(prev => prev.map(c => c.userId !== user.id ? { ...c, isRead: true } : c));
+    } catch (err) {
+      console.error('Failed to mark comments as read:', err);
+    }
+  }, [comments, taskId, user?.id]);
+
   // Initial load + start polling
   useEffect(() => {
     fetchComments();
     pollRef.current = setInterval(() => fetchComments(true), 8000);
     return () => clearInterval(pollRef.current);
   }, [fetchComments]);
+
+  useEffect(() => {
+    if (!loading) markAllAsRead();
+  }, [comments, loading, markAllAsRead]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -82,7 +97,7 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
     setSending(true);
     try {
       const res = await api.post(`/tasks/${taskId}/comments`, { comment: trimmed });
-      setComments(prev => [...prev, res.data]);
+      setComments(prev => [...prev, { ...res.data, isRead: true }]);
       onCommentCountChange?.(comments.length + 1);
       setText('');
     } catch (err) {
@@ -133,9 +148,12 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
             const isOwn = c.userId === user?.id;
             const rc = ROLE_COLORS[c.userRole] || ROLE_COLORS.director;
             return (
-              <div key={c.id} className={`${styles.msgRow} ${isOwn ? styles.msgRowOwn : ''}`}>
+                <div 
+                  key={c.id} 
+                  className={`${styles.msgRow} ${isOwn ? styles.msgRowOwn : ''}`}
+                >
                 {!isOwn && <Avatar name={c.userName} role={c.userRole} />}
-                <div className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : ''}`}>
+                  <div className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : ''} ${!c.isRead && !isOwn ? styles.bubbleUnread : ''}`}>
                   <div className={styles.bubbleMeta}>
                     {!isOwn && (
                       <span className={styles.bubbleAuthor}>{c.userName}</span>
@@ -157,7 +175,7 @@ const InlineTaskChat = ({ taskId, onCommentCountChange }) => {
                       </button>
                     )}
                   </div>
-                  <p className={styles.bubbleText}>{c.comment}</p>
+                    <p className={`${styles.bubbleText} ${!c.isRead && !isOwn ? styles.bubbleTextUnread : ''}`}>{c.comment}</p>
                 </div>
                 {isOwn && <Avatar name={c.userName} role={c.userRole} />}
               </div>

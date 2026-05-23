@@ -221,12 +221,12 @@ const disconnect = async (userId) => {
 /**
  * Make an authenticated Graph API request.
  */
-const graphGet = async (directorId, endpoint, params = {}) => {
+const graphGet = async (directorId, endpoint, params = {}, headers = {}) => {
   const token = await getValidToken(directorId);
   if (!token) throw new Error('NOT_CONNECTED');
 
   const res = await axios.get(`${GRAPH_BASE}${endpoint}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, ...headers },
     params,
   });
   return res.data;
@@ -242,6 +242,8 @@ const graphGet = async (directorId, endpoint, params = {}) => {
 const getCalendarEvents = async (directorId, days = 30) => {
   const now = new Date();
   const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  const mailboxSettings = await getMailboxSettings(directorId);
+  const timezoneHeader = mailboxSettings.timeZone ? { Prefer: `outlook.timezone="${mailboxSettings.timeZone}"` } : {};
 
   const data = await graphGet(directorId, '/me/calendarView', {
     startDateTime: now.toISOString(),
@@ -249,7 +251,7 @@ const getCalendarEvents = async (directorId, days = 30) => {
     $select: 'id,subject,bodyPreview,start,end,location,attendees,isAllDay,onlineMeeting,onlineMeetingUrl,organizer,importance,showAs,responseStatus,categories',
     $orderby: 'start/dateTime',
     $top: 100,
-  });
+  }, timezoneHeader);
 
   return (data.value || []).map(e => {
     // Outlook returns times in the event's timezone — extract date/time parts directly
@@ -286,6 +288,8 @@ const getTodayEvents = async (directorId) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  const mailboxSettings = await getMailboxSettings(directorId);
+  const timezoneHeader = mailboxSettings.timeZone ? { Prefer: `outlook.timezone="${mailboxSettings.timeZone}"` } : {};
 
   const data = await graphGet(directorId, '/me/calendarView', {
     startDateTime: today.toISOString(),
@@ -293,7 +297,7 @@ const getTodayEvents = async (directorId) => {
     $select: 'id,subject,bodyPreview,start,end,location,attendees,isAllDay,onlineMeeting,onlineMeetingUrl,organizer,importance,showAs',
     $orderby: 'start/dateTime',
     $top: 50,
-  });
+  }, timezoneHeader);
 
   return (data.value || []).map(e => {
     const startDT = e.start?.dateTime || '';

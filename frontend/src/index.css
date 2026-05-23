@@ -2,12 +2,30 @@
 
 :root {
   /* Backgrounds */
-  --bg-app:        #f1f5f9;
+  --bg-app:        linear-gradient(135deg, #f0f9fe 0%, #e8f4fd 50%, #e0f2fe 100%);
+  --bg-app-fallback: #f1f5f9;
   --bg-surface:    #ffffff;
   --bg-subtle:     #f8fafc;
   --bg-muted:      #f1f5f9;
   --bg-hover:      #f1f5f9;
   --bg-active:     #eff6ff;
+
+  /* Mesh overlay for depth */
+  --bg-mesh-overlay: 
+    repeating-linear-gradient(
+      0deg,
+      rgba(125, 211, 252, 0.03),
+      rgba(125, 211, 252, 0.03) 1px,
+      transparent 1px,
+      transparent 2px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(14, 165, 233, 0.03),
+      rgba(14, 165, 233, 0.03) 1px,
+      transparent 1px,
+      transparent 2px
+    );
 
   /* Borders */
   --border:        #e2e8f0;
@@ -73,12 +91,30 @@
 
 /* ── Dark mode overrides ───────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg-app:        #0f172a;
+  --bg-app:        linear-gradient(135deg, #0c3d5c 0%, #0f4a70 50%, #1a5a8a 100%);
+  --bg-app-fallback: #0f172a;
   --bg-surface:    #1e293b;
   --bg-subtle:     #1e293b;
   --bg-muted:      #0f172a;
   --bg-hover:      #334155;
   --bg-active:     #1e3a5f;
+
+  /* Mesh overlay for depth */
+  --bg-mesh-overlay: 
+    repeating-linear-gradient(
+      0deg,
+      rgba(14, 165, 233, 0.05),
+      rgba(14, 165, 233, 0.05) 1px,
+      transparent 1px,
+      transparent 2px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(125, 211, 252, 0.05),
+      rgba(125, 211, 252, 0.05) 1px,
+      transparent 1px,
+      transparent 2px
+    );
 
   --border:        #334155;
   --border-subtle: #1e293b;

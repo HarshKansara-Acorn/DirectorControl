@@ -39,6 +39,7 @@ const mapComment = (r) => ({
   userRole:  r.UserRole  || 'unknown',
   userAvatar: r.UserAvatar || '',
   comment:   r.Comment,
+  isRead:    r.IsRead ? true : false,
   createdAt: r.CreatedAt,
 });
 
@@ -266,7 +267,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 router.get('/:id/comments', authenticateToken, async (req, res) => {
   try {
     const rows = await query(
-      `SELECT c.*, u.Name AS UserName, u.Role AS UserRole, u.Avatar AS UserAvatar
+      `SELECT c.*, u.Name AS UserName, u.Role AS UserRole, u.Avatar AS UserAvatar, c.IsRead
        FROM DC_TaskComments c
        LEFT JOIN DC_Users u ON u.Id = c.UserId
        WHERE c.TaskId = @taskId
@@ -336,6 +337,57 @@ router.delete('/:id/comments/:commentId', authenticateToken, async (req, res) =>
     res.json({ message: 'Comment deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete comment' });
+  }
+});
+
+// PATCH /api/tasks/:id/comments/:commentId/read — mark a comment as read
+router.patch('/:id/comments/:commentId/read', authenticateToken, async (req, res) => {
+  try {
+    const c = await queryOne('SELECT TaskId FROM DC_TaskComments WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.commentId } });
+    if (!c) return res.status(404).json({ message: 'Comment not found' });
+
+    // Verify user is a participant
+    const task = await queryOne('SELECT AssignedTo, CreatedBy FROM DC_Tasks WHERE Id=@taskId', { taskId: { type: sql.NVarChar, value: c.TaskId } });
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    const isParticipant = req.user.role === 'admin' || task.AssignedTo === req.user.id || task.CreatedBy === req.user.id;
+    if (!isParticipant) return res.status(403).json({ message: 'Not authorized' });
+
+    await execute('UPDATE DC_TaskComments SET IsRead=1 WHERE Id=@id', { id: { type: sql.NVarChar, value: req.params.commentId } });
+    res.json({ message: 'Comment marked as read' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Failed to mark comment as read' });
+  }
+});
+
+router.patch('/:id/comments/read-all', authenticateToken, async (req, res) => {
+  try {
+    const { commentIds } = req.body;
+    if (!Array.isArray(commentIds) || !commentIds.length) {
+      return res.status(400).json({ message: 'commentIds array is required' });
+    }
+
+    const task = await queryOne(
+      'SELECT AssignedTo, CreatedBy FROM DC_Tasks WHERE Id=(SELECT TaskId FROM DC_TaskComments WHERE Id=@id)',
+      { id: { type: sql.NVarChar, value: commentIds[0] } }
+    );
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    const isParticipant = req.user.role === 'admin' || task.AssignedTo === req.user.id || task.CreatedBy === req.user.id;
+    if (!isParticipant) return res.status(403).json({ message: 'Not authorized' });
+
+    const idsParam = commentIds.map((id, index) => `@id${index}`).join(', ');
+    const params = {};
+    commentIds.forEach((id, index) => {
+      params[`id${index}`] = { type: sql.NVarChar, value: id };
+    });
+
+    await execute(`UPDATE DC_TaskComments SET IsRead=1 WHERE Id IN (${idsParam})`, params);
+    res.json({ message: 'Comments marked as read' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Failed to mark comments as read' });
   }
 });
 
