@@ -267,7 +267,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 router.get('/:id/comments', authenticateToken, async (req, res) => {
   try {
     const rows = await query(
-      `SELECT c.*, u.Name AS UserName, u.Role AS UserRole, u.Avatar AS UserAvatar, c.IsRead
+      `SELECT c.Id, c.TaskId, c.UserId, c.Comment, c.CreatedAt, c.IsRead,
+              u.Name AS UserName, u.Role AS UserRole, u.Avatar AS UserAvatar
        FROM DC_TaskComments c
        LEFT JOIN DC_Users u ON u.Id = c.UserId
        WHERE c.TaskId = @taskId
@@ -310,7 +311,8 @@ router.post('/:id/comments', authenticateToken, async (req, res) => {
     );
 
     const rows = await query(
-      `SELECT c.*, u.Name AS UserName, u.Role AS UserRole, u.Avatar AS UserAvatar
+      `SELECT c.Id, c.TaskId, c.UserId, c.Comment, c.CreatedAt, c.IsRead,
+              u.Name AS UserName, u.Role AS UserRole, u.Avatar AS UserAvatar
        FROM DC_TaskComments c
        LEFT JOIN DC_Users u ON u.Id = c.UserId
        WHERE c.Id = @id`,
