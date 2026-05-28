@@ -64,7 +64,12 @@ router.get('/microsoft/callback', async (req, res) => {
 
     await outlookService.storeConnectionTokens(directorId, tokens, profile.email, profile.msId);
 
-    const returnPath = returnTo === 'admin' ? '/dashboard' : '/settings?section=linked';
+    const pathMap = {
+      'admin': '/dashboard',
+      'admin-dashboard': '/admin-dashboard',
+      'settings': '/settings?section=linked',
+    };
+    const returnPath = pathMap[returnTo] || '/settings?section=linked';
     return res.redirect(`${redirectBase}${returnPath}&outlookConnected=true&directorId=${encodeURIComponent(directorId)}`);
   } catch (err) {
     console.error('Outlook callback error:', err.message);

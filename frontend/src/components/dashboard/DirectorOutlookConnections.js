@@ -34,18 +34,18 @@ const DirectorOutlookConnections = () => {
     }
   }, [directors]);
 
-  // On mount: check if we just returned from OAuth (teamsConnected param)
+  // On mount: check if we just returned from Outlook OAuth
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('teamsConnected') === 'true') {
+    if (params.get('outlookConnected') === 'true') {
       setSuccessMsg('✅ Outlook connected successfully! Events will now sync automatically.');
       // Clean URL
       window.history.replaceState({}, '', '/admin-dashboard');
       // Refresh statuses after a short delay to let DB settle
       setTimeout(() => fetchStatuses(), 1000);
     }
-    if (params.get('teamsError')) {
-      setSuccessMsg(`❌ ${decodeURIComponent(params.get('teamsError'))}`);
+    if (params.get('outlookError')) {
+      setSuccessMsg(`❌ ${decodeURIComponent(params.get('outlookError'))}`);
       window.history.replaceState({}, '', '/admin-dashboard');
     }
   }, []); // eslint-disable-line
