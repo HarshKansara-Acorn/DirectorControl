@@ -67,7 +67,7 @@ router.post('/director/:id/connect-outlook', authenticateToken, requireAdmin, as
       return res.status(503).json({ message: 'Outlook integration not configured' });
     }
 
-    const authUrl = outlookService.getAuthUrlForDirector(directorId, 'settings');
+    const authUrl = outlookService.getAuthUrlForDirector(directorId, 'admin-dashboard');
     await outlookService.createPendingConnection(directorId);
     res.json({ authUrl });
   } catch (err) {

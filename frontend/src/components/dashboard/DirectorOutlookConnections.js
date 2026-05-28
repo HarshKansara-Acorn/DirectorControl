@@ -1,82 +1,108 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDirector } from '../../context/DirectorContext';
 import api from '../../services/api';
 import DashboardCard from './DashboardCard';
 import styles from './DirectorOutlookConnections.module.css';
-import { CheckCircle2, Link2, RefreshCcw, XCircle } from 'lucide-react';
+import { CheckCircle2, Link2, RefreshCcw, XCircle, Calendar } from 'lucide-react';
 
 const DirectorOutlookConnections = () => {
   const { directors } = useDirector();
-  const [statuses, setStatuses] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState({});
+  const [statuses, setStatuses]   = useState({});
+  const [loading, setLoading]     = useState(true);
+  const [feedback, setFeedback]   = useState({});
+  const [syncing, setSyncing]     = useState({});
+  const [successMsg, setSuccessMsg] = useState('');
 
-  const fetchStatuses = async () => {
+  const fetchStatuses = useCallback(async () => {
+    if (!directors.length) return;
     setLoading(true);
     try {
-      const results = await Promise.all(directors.map((director) =>
-        api.get(`/admin/director/${director.id}/outlook-status`).then((res) => ({ id: director.id, data: res.data }))
-      ));
+      const results = await Promise.all(
+        directors.map(d =>
+          api.get(`/admin/director/${d.id}/outlook-status`)
+            .then(res => ({ id: d.id, data: res.data }))
+            .catch(() => ({ id: d.id, data: { connected: false, configured: true } }))
+        )
+      );
       const next = {};
-      results.forEach((result) => {
-        next[result.id] = result.data;
-      });
+      results.forEach(r => { next[r.id] = r.data; });
       setStatuses(next);
     } catch (err) {
       console.error('Failed to load Outlook statuses:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [directors]);
+
+  // On mount: check if we just returned from OAuth (teamsConnected param)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('teamsConnected') === 'true') {
+      setSuccessMsg('✅ Outlook connected successfully! Events will now sync automatically.');
+      // Clean URL
+      window.history.replaceState({}, '', '/admin-dashboard');
+      // Refresh statuses after a short delay to let DB settle
+      setTimeout(() => fetchStatuses(), 1000);
+    }
+    if (params.get('teamsError')) {
+      setSuccessMsg(`❌ ${decodeURIComponent(params.get('teamsError'))}`);
+      window.history.replaceState({}, '', '/admin-dashboard');
+    }
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     if (directors.length > 0) fetchStatuses();
-  }, [directors]);
-
-  const updateFeedback = (directorId, message) => {
-    setFeedback((prev) => ({ ...prev, [directorId]: message }));
-  };
+  }, [directors, fetchStatuses]);
 
   const handleConnect = async (directorId) => {
-    updateFeedback(directorId, 'Generating secure connection link...');
+    setFeedback(prev => ({ ...prev, [directorId]: 'Redirecting to Microsoft login...' }));
     try {
       const res = await api.post(`/admin/director/${directorId}/connect-outlook`);
       const authUrl = res.data.authUrl;
       if (!authUrl) {
-        updateFeedback(directorId, 'Failed to generate Outlook connection link');
+        setFeedback(prev => ({ ...prev, [directorId]: '❌ Failed to generate Outlook connection link' }));
         return;
       }
-
-      try {
-        await navigator.clipboard.writeText(authUrl);
-        updateFeedback(directorId, 'Connection link copied to clipboard. Opened in a new tab for director use.');
-      } catch {
-        updateFeedback(directorId, 'Connection link generated. Please paste it into a message for the director.');
-      }
-
-      const popup = window.open('about:blank', '_blank');
-      if (popup) {
-        popup.location.href = authUrl;
-      }
+      // Redirect current window — Microsoft will redirect back to admin-dashboard after auth
+      window.location.href = authUrl;
     } catch (err) {
-      updateFeedback(directorId, err.response?.data?.message || 'Failed to start Outlook connection');
+      setFeedback(prev => ({
+        ...prev,
+        [directorId]: err.response?.data?.message || '❌ Failed to start Outlook connection'
+      }));
     }
   };
 
   const handleDisconnect = async (directorId) => {
-    updateFeedback(directorId, 'Disconnecting Outlook...');
+    setFeedback(prev => ({ ...prev, [directorId]: 'Disconnecting...' }));
     try {
       await api.post(`/admin/director/${directorId}/disconnect-outlook`);
       await fetchStatuses();
-      updateFeedback(directorId, 'Outlook disconnected successfully.');
+      setFeedback(prev => ({ ...prev, [directorId]: '✅ Outlook disconnected.' }));
+      setTimeout(() => setFeedback(prev => ({ ...prev, [directorId]: '' })), 3000);
     } catch (err) {
-      updateFeedback(directorId, err.response?.data?.message || 'Failed to disconnect Outlook');
+      setFeedback(prev => ({
+        ...prev,
+        [directorId]: err.response?.data?.message || '❌ Failed to disconnect'
+      }));
     }
   };
 
-  const handleRefresh = async () => {
-    await fetchStatuses();
-    setFeedback({});
+  const handleSyncNow = async (directorId) => {
+    setSyncing(prev => ({ ...prev, [directorId]: true }));
+    setFeedback(prev => ({ ...prev, [directorId]: 'Syncing Outlook calendar...' }));
+    try {
+      const res = await api.get('/teams/auto-sync', { params: { directorId } });
+      const msg = res.data.synced
+        ? `✅ Synced — ${res.data.added} new, ${res.data.updated} updated`
+        : '⚠️ Sync skipped (not connected)';
+      setFeedback(prev => ({ ...prev, [directorId]: msg }));
+      setTimeout(() => setFeedback(prev => ({ ...prev, [directorId]: '' })), 4000);
+    } catch (err) {
+      setFeedback(prev => ({ ...prev, [directorId]: '❌ Sync failed' }));
+    } finally {
+      setSyncing(prev => ({ ...prev, [directorId]: false }));
+    }
   };
 
   return (
@@ -85,55 +111,86 @@ const DirectorOutlookConnections = () => {
       title="Director Outlook Connections"
       badge={directors.length}
       badgeColor="purple"
-      onAdd={handleRefresh}
-      addLabel="Refresh connection status"
+      onAdd={fetchStatuses}
+      addLabel="Refresh"
     >
+      {/* Success/error message after OAuth redirect */}
+      {successMsg && (
+        <div className={`${styles.globalMsg} ${successMsg.startsWith('✅') ? styles.globalMsgSuccess : styles.globalMsgError}`}>
+          {successMsg}
+        </div>
+      )}
+
       <div className={styles.list}>
         {directors.length === 0 ? (
           <div className={styles.empty}>No directors available</div>
         ) : loading ? (
           <div className={styles.loading}>Loading connection status...</div>
-        ) : directors.map((director) => {
-          const status = statuses[director.id] || {};
-          const connected = status.connected;
-          const pending = !status.configured ? false : !connected && status.msUserEmail;
-          return (
-            <div key={director.id} className={styles.row}>
-              <div className={styles.userInfo}>
-                <div className={styles.name}>{director.name}</div>
-                <div className={styles.meta}>
+        ) : (
+          directors.map(director => {
+            const status = statuses[director.id] || {};
+            const connected = status.connected;
+            return (
+              <div key={director.id} className={styles.row}>
+                <div className={styles.userInfo}>
+                  <div className={styles.name}>{director.name}</div>
+                  <div className={styles.meta}>
+                    {connected ? (
+                      <span className={styles.statusConnected}>
+                        <CheckCircle2 size={14} /> Connected
+                        {status.msUserEmail && <span className={styles.email}> · {status.msUserEmail}</span>}
+                      </span>
+                    ) : status.configured === false ? (
+                      <span className={styles.statusError}><XCircle size={14} /> Azure AD not configured</span>
+                    ) : (
+                      <span className={styles.statusPending}><Link2 size={14} /> Not connected</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.actions}>
                   {connected ? (
-                    <span className={styles.statusConnected}><CheckCircle2 size={14} /> Connected</span>
-                  ) : status.configured === false ? (
-                    <span className={styles.statusError}><XCircle size={14} /> Not configured</span>
+                    <>
+                      <button
+                        className={styles.syncBtn}
+                        onClick={() => handleSyncNow(director.id)}
+                        disabled={syncing[director.id]}
+                        title="Sync Outlook calendar now"
+                      >
+                        <Calendar size={13} />
+                        {syncing[director.id] ? 'Syncing...' : 'Sync Now'}
+                      </button>
+                      <button
+                        className={styles.disconnectBtn}
+                        onClick={() => handleDisconnect(director.id)}
+                      >
+                        Disconnect
+                      </button>
+                    </>
                   ) : (
-                    <span className={styles.statusPending}><Link2 size={14} /> Not connected</span>
-                  )}
-                  {status.lastSync && (
-                    <span className={styles.syncTime}>Last sync {new Date(status.lastSync).toLocaleString()}</span>
+                    <button
+                      className={styles.connectBtn}
+                      onClick={() => handleConnect(director.id)}
+                    >
+                      Connect Outlook
+                    </button>
                   )}
                 </div>
-              </div>
-              <div className={styles.actions}>
-                {connected ? (
-                  <button className={styles.disconnectBtn} onClick={() => handleDisconnect(director.id)}>
-                    Disconnect
-                  </button>
-                ) : (
-                  <button className={styles.connectBtn} onClick={() => handleConnect(director.id)}>
-                    Connect Outlook
-                  </button>
+
+                {feedback[director.id] && (
+                  <div className={`${styles.feedback} ${feedback[director.id]?.startsWith('✅') ? styles.feedbackSuccess : ''}`}>
+                    {feedback[director.id]}
+                  </div>
                 )}
               </div>
-              {feedback[director.id] && (
-                <div className={styles.feedback}>{feedback[director.id]}</div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
+
       <div className={styles.hint}>
-        Admins can generate a secure Outlook authorization link for each director. The director must complete sign-in using their own Microsoft account.
+        Click <strong>Connect Outlook</strong> to sign in with the director's Microsoft account.
+        After sign-in, you'll be returned here and events will sync automatically every 5 minutes.
       </div>
     </DashboardCard>
   );
