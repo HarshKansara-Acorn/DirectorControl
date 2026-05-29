@@ -150,9 +150,8 @@ router.get('/auth/callback', async (req, res) => {
   const redirectBase = process.env.FRONTEND_URL || 'http://localhost:3000';
   // Map returnTo values to frontend paths
   const pathMap = {
-    'admin-dashboard': '/admin-dashboard',
-    'settings':        '/settings?section=linked',
-    'teams':           '/settings?section=linked',
+    'settings': '/settings?section=linked',
+    'teams':    '/teams',
   };
   const returnPath = pathMap[returnTo] || '/settings?section=linked';
 

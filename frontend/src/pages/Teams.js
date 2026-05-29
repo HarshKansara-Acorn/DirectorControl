@@ -41,19 +41,26 @@ const Teams = () => {
   const [activeTab, setActiveTab]   = useState('calendar');
   const [calFilter, setCalFilter]   = useState('all');   // all | teams | today
   const [connectingId, setConnectingId] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // ── Check URL params after OAuth redirect ──────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('connected') === 'true' || params.get('teamsConnected') === 'true') {
-      setSyncMsg('✅ Teams account connected successfully!');
-      setTimeout(() => setSyncMsg(''), 4000);
+      const connectedUserId = params.get('userId');
+      setSyncMsg(`✅ Teams account connected successfully!${connectedUserId ? ' (Director ID: ' + connectedUserId + ')' : ''}`);
+      setTimeout(() => setSyncMsg(''), 5000);
+      // Refresh status after connection
+      fetchStatus();
+      fetchSummary();
+      // Trigger refresh for director connection cards
+      setRefreshTrigger(prev => prev + 1);
     }
     if (params.get('error') || params.get('teamsError')) {
       const errMsg = params.get('error') || params.get('teamsError');
       setSyncMsg(`❌ ${decodeURIComponent(errMsg)}`);
     }
-  }, [location.search]);
+  }, [location.search, fetchStatus, fetchSummary]);
 
   // ── Fetch connection status ────────────────────────────────────────────────
   const fetchStatus = useCallback(async () => {
@@ -225,6 +232,7 @@ const Teams = () => {
               directors={directors}
               onConnect={handleConnect}
               connectingId={connectingId}
+              refreshTrigger={refreshTrigger}
             />
           )}
         </div>
@@ -518,25 +526,25 @@ const TasksList = ({ tasks }) => {
   );
 };
 
-const DirectorConnectionStatus = ({ directors, onConnect, connectingId }) => (
+const DirectorConnectionStatus = ({ directors, onConnect, connectingId, refreshTrigger }) => (
   <div className={styles.directorConnections}>
     <h3 className={styles.dirConnTitle}>All Directors — Teams Connection Status</h3>
     <div className={styles.dirConnGrid}>
       {directors.map(d => (
-        <DirectorConnCard key={d.id} director={d} onConnect={onConnect} connectingId={connectingId} />
+        <DirectorConnCard key={d.id} director={d} onConnect={onConnect} connectingId={connectingId} refreshTrigger={refreshTrigger} />
       ))}
     </div>
   </div>
 );
 
-const DirectorConnCard = ({ director, onConnect, connectingId }) => {
+const DirectorConnCard = ({ director, onConnect, connectingId, refreshTrigger }) => {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
     api.get('/teams/status', { params: { userId: director.id } })
       .then(r => setStatus(r.data))
       .catch(() => setStatus({ connected: false }));
-  }, [director.id]);
+  }, [director.id, refreshTrigger]);
 
   return (
     <div className={styles.dirConnCard}>
