@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDirector } from '../context/DirectorContext';
 import api from '../services/api';
 import {
-  Users, Calendar, CheckSquare, Wifi, WifiOff,
+  Users, Calendar, CheckSquare, CheckCircle, Wifi, WifiOff,
   RefreshCw, ExternalLink, Clock, MapPin,
   AlertCircle, Link, Unlink, ChevronDown, ChevronUp,
   Mail, Bell
@@ -558,7 +558,17 @@ const DirectorConnCard = ({ director, onConnect, connectingId, refreshTrigger })
           }
         </div>
       </div>
-      {status && !status.connected && (
+      {status === null ? (
+        <span className={styles.dirConnBtn} style={{ opacity: 0.5 }}>...</span>
+      ) : status.connected ? (
+        <button
+          className={styles.dirConnBtn}
+          style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}
+          disabled
+        >
+          <CheckCircle size={12} /> Connected
+        </button>
+      ) : (
         <button
           className={styles.dirConnBtn}
           onClick={() => onConnect(director.id)}
