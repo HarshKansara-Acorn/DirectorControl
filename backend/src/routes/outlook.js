@@ -56,21 +56,16 @@ router.get('/microsoft/callback', async (req, res) => {
     const tokens = await outlookService.exchangeCodeForTokens(code);
     const profile = await outlookService.getUserProfile(directorId);
 
-    const isValid = await outlookService.validateDirectorEmailMatch(directorId, profile.email);
-    if (!isValid) {
-      console.warn(`Microsoft profile email mismatch for director ${directorId}: ${profile.email}`);
-      return res.redirect(`${redirectBase}${defaultPath}&outlookError=Please+sign+in+with+the+director%27s+Microsoft+account`);
-    }
-
+    // Skip email validation — admin connects their own Microsoft account for any director
     await outlookService.storeConnectionTokens(directorId, tokens, profile.email, profile.msId);
 
     const pathMap = {
-      'admin': '/dashboard',
+      'admin': '/admin-dashboard',
       'admin-dashboard': '/admin-dashboard',
       'settings': '/settings?section=linked',
     };
-    const returnPath = pathMap[returnTo] || '/settings?section=linked';
-    return res.redirect(`${redirectBase}${returnPath}&outlookConnected=true&directorId=${encodeURIComponent(directorId)}`);
+    const returnPath = pathMap[returnTo] || '/admin-dashboard';
+    return res.redirect(`${redirectBase}${returnPath}&teamsConnected=true&directorId=${encodeURIComponent(directorId)}`);
   } catch (err) {
     console.error('Outlook callback error:', err.message);
     const message = encodeURIComponent(err.message || 'Outlook authorization failed');

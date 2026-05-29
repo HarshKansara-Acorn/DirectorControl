@@ -67,8 +67,10 @@ router.post('/director/:id/connect-outlook', authenticateToken, requireAdmin, as
       return res.status(503).json({ message: 'Outlook integration not configured' });
     }
 
-    const authUrl = outlookService.getAuthUrlForDirector(directorId, 'admin-dashboard');
-    await outlookService.createPendingConnection(directorId);
+    // Use the teams OAuth flow which uses the registered AZURE_REDIRECT_URI
+    const teamsService = require('../services/teamsService');
+    const state = JSON.stringify({ userId: directorId, returnTo: 'admin-dashboard' });
+    const authUrl = teamsService.getAuthUrl(state);
     res.json({ authUrl });
   } catch (err) {
     console.error('Connect Outlook error:', err.message);
