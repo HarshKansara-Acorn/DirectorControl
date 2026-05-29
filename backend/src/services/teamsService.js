@@ -243,14 +243,16 @@ const getCalendarEvents = async (directorId, days = 30) => {
   const now = new Date();
   const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
   const mailboxSettings = await getMailboxSettings(directorId);
-  const timezoneHeader = mailboxSettings.timeZone ? { Prefer: `outlook.timezone="${mailboxSettings.timeZone}"` } : {};
+  // Always use a timezone — fallback to GMT Standard Time if mailbox settings unavailable
+  const tz = mailboxSettings.timeZone || 'GMT Standard Time';
+  const timezoneHeader = { Prefer: `outlook.timezone="${tz}"` };
 
   const data = await graphGet(directorId, '/me/calendarView', {
     startDateTime: now.toISOString(),
     endDateTime: end.toISOString(),
     $select: 'id,subject,bodyPreview,start,end,location,attendees,isAllDay,onlineMeeting,onlineMeetingUrl,organizer,importance,showAs,responseStatus,categories',
     $orderby: 'start/dateTime',
-    $top: 100,
+    $top: 500,
   }, timezoneHeader);
 
   return (data.value || []).map(e => {
@@ -289,7 +291,9 @@ const getTodayEvents = async (directorId) => {
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
   const mailboxSettings = await getMailboxSettings(directorId);
-  const timezoneHeader = mailboxSettings.timeZone ? { Prefer: `outlook.timezone="${mailboxSettings.timeZone}"` } : {};
+  // Always use a timezone — fallback to GMT Standard Time if mailbox settings unavailable
+  const tz = mailboxSettings.timeZone || 'GMT Standard Time';
+  const timezoneHeader = { Prefer: `outlook.timezone="${tz}"` };
 
   const data = await graphGet(directorId, '/me/calendarView', {
     startDateTime: today.toISOString(),
